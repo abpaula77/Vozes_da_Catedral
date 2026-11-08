@@ -1,41 +1,67 @@
-# 🎵 Vozes da Catedral
+# Vozes da Catedral 🎵⛪
 
-App multiplataforma para gestão e execução de cantos litúrgicos em missas da Igreja Católica.
+App multiplataforma (Android / Web) para gestão e execução de cantos litúrgicos em missas da Igreja Católica Romana.
 
-**Projeto Piloto:** Catedral de Santo Antônio — Piracicaba/SP
+**Projeto piloto:** Coral da Catedral de Santo Antônio — Piracicaba/SP
 
 ---
 
 ## Sobre o Projeto
 
-O **Vozes da Catedral** é uma aplicação Flutter (Android + Web) que ajuda corais e ministérios de música sacra a organizar e executar o repertório litúrgico durante a Missa Romana. O app permite ao **Coordenador** do grupo montar a estrutura da celebração com as músicas de cada momento litúrgico, e os **Membros** acompanham em modo performance — com dark mode otimizado para ambientes de pouca iluminação, ajuste de fonte e suporte offline.
+O **Vozes da Catedral** resolve um problema real de corais e ministérios de música sacra: a dependência de PDFs, papéis impressos e mensagens de WhatsApp desorganizadas para coordenar os cantos durante a missa.
+
+O app permite que o **Coordenador** monte a estrutura completa de uma celebração (seguindo o Rito Romano), vincule músicas com cifras a cada momento litúrgico e compartilhe com os membros do grupo. Na hora da missa, cada membro acessa o **Modo Performance** — otimizado para uso ao vivo, com dark mode de baixo brilho, ajuste de fonte e funcionamento 100% offline.
 
 ---
 
-## Funcionalidades (MVP)
+## Funcionalidades do MVP
 
-- 🔐 **Autenticação** — Google OAuth e e-mail/senha (via Supabase)
-- 👥 **Grupos** — Coordenador cria e gerencia membros do grupo
-- 🎶 **Hinário** — Importação de músicas em formato `.txt` com cifras
-- ⛪ **Montador de Missa** — Estrutura do Rito Romano com músicas vinculadas por momento litúrgico
-- 🌙 **Modo Performance** — Dark mode para altar, ajuste de fonte, toggle de cifras, tela ativa
-- 📴 **Offline-first** — Músicas e celebrações disponíveis sem internet durante a missa
+- 🔐 **Autenticação** — Google OAuth e e-mail/senha via Supabase
+- 👥 **Grupos** — Coordenador gerencia membros; membros acessam no modo leitura
+- 🎵 **Hinário** — Importação de músicas via arquivo `.txt` com cifras e letras
+- ✝️ **Montador de Celebração** — Estrutura do Rito Romano com slots para cada momento litúrgico
+- 🌙 **Modo Performance** — Dark mode, ajuste de fonte, toggle de cifras, rolagem contínua, tela sempre ativa
+- 📲 **Offline-first** — Músicas e celebrações sincronizadas ficam disponíveis sem internet durante a missa
 
 ---
 
-## Stack
+## Stack Tecnológica
 
 | Camada | Tecnologia |
 |---|---|
-| Mobile/Web | Flutter 3.x |
-| Backend | Supabase (free tier) |
-| Banco Local | Drift (SQLite) |
-| Estado | Riverpod |
-| Navegação | GoRouter |
+| Frontend/Mobile | Flutter 3.x |
+| Backend | Supabase (Auth + PostgreSQL + Storage) |
+| Persistência local | `drift` (SQLite type-safe) |
+| Estado | `riverpod` |
+| Navegação | `go_router` |
+| Importação de arquivos | `file_picker` |
+| Tela ativa | `wakelock_plus` |
 
 ---
 
-## Formato de Música (`.txt`)
+## Arquitetura
+
+```
+lib/
+├── core/
+│   ├── config/        # Configuração do Supabase
+│   ├── database/      # Schema local Drift (SQLite)
+│   ├── router/        # Rotas go_router
+│   └── theme/         # Temas claro/escuro
+└── features/
+    ├── auth/          # Autenticação e perfil
+    ├── groups/        # Grupos e membros
+    ├── songs/         # Hinário, parser de cifras
+    ├── celebrations/  # Montador de celebração
+    ├── performance/   # Modo Performance (leitor litúrgico)
+    └── splash/        # Tela inicial
+```
+
+---
+
+## Formato de Músicas
+
+O app utiliza um formato de texto simples para importação de cifras:
 
 ```text
 [TITULO]: Santo, Santo, Santo
@@ -58,10 +84,11 @@ Hosana nas alturas!
 
 ---
 
-## Configuração do Ambiente
+## Instalação para Desenvolvimento
 
 ### Pré-requisitos
-- Flutter 3.x ([instalação](https://flutter.dev/docs/get-started/install))
+
+- Flutter SDK `>=3.7.0`
 - Conta no [Supabase](https://supabase.com) (free tier)
 
 ### Setup
@@ -74,28 +101,36 @@ cd Vozes_da_Catedral
 # Instale as dependências
 flutter pub get
 
-# Configure as credenciais do Supabase
-# Crie um arquivo .env ou passe via --dart-define:
-flutter run --dart-define=SUPABASE_URL=https://seu-projeto.supabase.co \
-            --dart-define=SUPABASE_ANON_KEY=sua-chave-anon
+# Copie o arquivo de variáveis de ambiente
+cp .env.example .env
+# Edite .env com suas credenciais do Supabase
+
+# Execute o app
+flutter run
 ```
 
 ---
 
-## Instalação Android (Piloto — Sideload)
+## Distribuição do Piloto (Android)
 
-1. Baixe o arquivo `.apk` na seção [Releases](https://github.com/abpaula77/Vozes_da_Catedral/releases)
-2. No Android, ative **"Instalar de fontes desconhecidas"** nas configurações
-3. Abra o arquivo `.apk` para instalar
+Para instalar o APK diretamente no Android (sideload):
+
+1. No Android, acesse **Configurações > Segurança > Fontes desconhecidas** e habilite.
+2. Receba o arquivo `.apk` via WhatsApp ou Google Drive.
+3. Abra o arquivo e toque em **Instalar**.
+
+---
+
+## Contribuindo
+
+Contribuições são bem-vindas! Abra uma issue ou pull request.
 
 ---
 
 ## Licença
 
-Distribuído sob a licença MIT. Veja [LICENSE](LICENSE) para mais informações.
+MIT License — veja [LICENSE](LICENSE) para detalhes.
 
 ---
 
-## Projeto Piloto
-
-Este app foi desenvolvido para o grupo **Vozes da Catedral** da Catedral de Santo Antônio (Piracicaba/SP). Contribuições e adaptações para outros grupos são bem-vindas.
+*Desenvolvido com ❤️ para o Coral da Catedral de Santo Antônio de Piracicaba/SP*
