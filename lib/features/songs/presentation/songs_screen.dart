@@ -1,0 +1,318 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/router/app_router.dart';
+import '../data/songs_provider.dart';
+import '../domain/song_model.dart';
+import '../domain/song_parser.dart';
+
+class SongsScreen extends ConsumerWidget {
+  final String grupoId;
+  final bool isCoordenador;
+
+  const SongsScreen({
+    super.key,
+    required this.grupoId,
+    required this.isCoordenador,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final musicasAsync = ref.watch(musicasByGrupoProvider(grupoId));
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Hinário'),
+        actions: [
+          if (isCoordenador)
+            IconButton(
+              icon: const Icon(Icons.upload_file),
+              tooltip: 'Importar .txt',
+              onPressed: () => _importFile(context, ref),
+            ),
+          if (isCoordenador)
+            IconButton(
+              icon: const Icon(Icons.cloud_upload_outlined),
+              tooltip: 'Publicar no grupo',
+              onPressed: () => _publishMusicas(context, ref),
+            ),
+          IconButton(
+            icon: const Icon(Icons.cloud_download_outlined),
+            tooltip: 'Sincronizar com grupo',
+            onPressed: () => _syncMusicas(context, ref),
+          ),
+        ],
+      ),
+      body: musicasAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Erro: $e')),
+        data: (musicas) {
+          if (musicas.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.music_off,
+                      size: 64,
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+                  const SizedBox(height: 16),
+                  Text('Nenhuma música no hinário.',
+                      style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  if (isCoordenador)
+                    FilledButton.tonal(
+                      onPressed: () => _importFile(context, ref),
+                      child: const Text('Importar arquivo .txt'),
+                    )
+                  else
+                    FilledButton.tonal(
+                      onPressed: () => _syncMusicas(context, ref),
+                      child: const Text('Sincronizar com grupo'),
+                    ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: musicas.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final musica = musicas[index];
+              return _MusicaCard(
+                musica: musica,
+                isCoordenador: isCoordenador,
+                onDelete: isCoordenador
+                    ? () => _deleteMusica(context, ref, musica)
+                    : null,
+                onTap: () => context.push(AppRoutes.songDetailPath(grupoId, musica.id)),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: isCoordenador
+          ? FloatingActionButton.extended(
+              onPressed: () => _importFile(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Importar .txt'),
+            )
+          : null,
+    );
+  }
+
+  Future<void> _importFile(BuildContext context, WidgetRef ref) async {
+    try {
+      final service = ref.read(songsServiceProvider);
+      final titulo = await service.importFromFile(grupoId: grupoId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('"$titulo" adicionado ao hinário.'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      }
+    } on SongParseException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro no arquivo: ${e.message}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao importar: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _publishMusicas(BuildContext context, WidgetRef ref) async {
+    final service = ref.read(songsServiceProvider);
+    try {
+      final count = await service.publishMusicas(grupoId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$count música(s) publicada(s) no grupo.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao publicar: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _syncMusicas(BuildContext context, WidgetRef ref) async {
+    final service = ref.read(songsServiceProvider);
+    try {
+      final count = await service.syncMusicas(grupoId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$count música(s) sincronizada(s).')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao sincronizar: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteMusica(
+      BuildContext context, WidgetRef ref, SongModel musica) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remover música?'),
+        content: Text('"${musica.titulo}" será removida do hinário local.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await ref.read(songsServiceProvider).deleteMusica(musica.id);
+    }
+  }
+}
+
+class _MusicaCard extends StatelessWidget {
+  final SongModel musica;
+  final bool isCoordenador;
+  final VoidCallback? onDelete;
+  final VoidCallback onTap;
+
+  const _MusicaCard({
+    required this.musica,
+    required this.isCoordenador,
+    required this.onTap,
+    this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Tone badge
+              if (musica.tomOriginal != null)
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    musica.tomOriginal!,
+                    style: TextStyle(
+                      fontFamily: 'RobotoMono',
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onPrimaryContainer,
+                      fontSize: 13,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(Icons.music_note,
+                      color: theme.colorScheme.onSurfaceVariant),
+                ),
+              const SizedBox(width: 16),
+              // Title + categories
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(musica.titulo,
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    if (musica.categorias.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 4,
+                        children: musica.categorias
+                            .take(3)
+                            .map((cat) => _CategoryBadge(cat: cat))
+                            .toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (onDelete != null)
+                IconButton(
+                  icon: Icon(Icons.delete_outline,
+                      color: theme.colorScheme.error.withValues(alpha: 0.7)),
+                  onPressed: onDelete,
+                  iconSize: 20,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryBadge extends StatelessWidget {
+  final String cat;
+  const _CategoryBadge({required this.cat});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        cat.length > 1 ? cat[0].toUpperCase() + cat.substring(1) : cat,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSecondaryContainer,
+        ),
+      ),
+    );
+  }
+}

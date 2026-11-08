@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/groups_provider.dart';
 import '../domain/group_model.dart';
@@ -149,9 +150,7 @@ class _GrupoCard extends StatelessWidget {
             const Icon(Icons.chevron_right),
           ],
         ),
-        onTap: () {
-          // Navigate to group detail — will be wired in router
-        },
+        onTap: () => context.goGroupDetail(grupo.id),
       ),
     );
   }
