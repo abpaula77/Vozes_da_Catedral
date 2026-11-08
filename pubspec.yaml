@@ -1,0 +1,44 @@
+name: vozes_da_catedral
+description: "App para gestão e execução de cantos litúrgicos em missas da Igreja Católica"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.7.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Backend
+  supabase_flutter: ^2.8.4
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^14.6.3
+
+  # Local database (offline-first)
+  drift: ^2.20.3
+  drift_flutter: ^0.2.4
+
+  # File import
+  file_picker: ^8.3.7
+
+  # Keep screen awake during performance mode
+  wakelock_plus: ^1.2.10
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+  drift_dev: ^2.20.3
+  riverpod_generator: ^2.4.3
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/fonts/
