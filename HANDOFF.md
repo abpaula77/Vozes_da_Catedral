@@ -1,82 +1,35 @@
 # Handoff — Vozes da Catedral
 
-> Documento de continuidade para outra sessão de IA ou desenvolvedor.  
-> Atualizado em: novembro/2026
+> Documento de continuidade para outra sessão de IA ou desenvolvedor.
+> Última atualização: novembro/2026
 
 ---
 
-## Estado Atual
+## Resumo Executivo
 
-### Tasks Concluídas (código escrito)
+App Flutter (Android + Web) para gestão e execução de cantos litúrgicos em missas da Igreja Católica.
+Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 
-| Task | Status | Commitada |
-|------|--------|-----------|
-| Task 1 — Setup base, Supabase config, schema Drift, modelos | ✅ | ✅ |
-| Task 2 — Auth (login, signup, onboarding de papel) | ✅ | ❌ |
-| Task 3 — Parser de cifras + CifraView (RobotoMono) | ✅ | ❌ |
-| Task 4 — Hinário local + importação de .txt | ✅ | ❌ |
-| Task 5 — Grupos, RLS, gestão de membros | ❌ | — |
-| Task 6 — Sync músicas Supabase | ❌ | — |
-| Task 7 — Montador de Celebração | ❌ | — |
-| Task 8 — Modo Performance | ❌ | — |
-| Task 9 — Build APK + deploy web | ❌ | — |
+**Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
+**Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
+**GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
+**Último commit:** `3d5e8fc` — feat: Tasks 2-4
 
 ---
 
-## Ação Imediata Necessária
+## Estado das Tasks
 
-### 1. Commitar e pushar tasks 2, 3 e 4
-
-```bash
-cd d:\Vozes_da_Catedral
-git add .
-git commit -m "feat: Tasks 2-4 — auth, song parser, CifraView, hinário local"
-git push origin master
-```
-
-### 2. Aplicar schema no Supabase
-
-1. Acesse https://supabase.com/dashboard → projeto `npujroyocclobjrpeaed`
-2. Vá em **SQL Editor**
-3. Cole e execute o conteúdo de `supabase/schema.sql`
-
-Isso cria: tabelas `users`, `grupos`, `membros_grupo`, `musicas`, `celebracoes`, `itens_celebracao` + trigger de auto-criação de perfil + políticas RLS.
-
-### 3. Testar no Android
-
-```bash
-adb devices  # verificar SM-A546E serial RQCW701905N
-flutter run -d RQCW701905N
-```
-
-Se der erro de cache Kotlin (drives C: e D: diferentes):
-```bash
-flutter clean
-flutter run -d RQCW701905N
-```
-
----
-
-## Arquivos Pendentes de Commit
-
-```
-android/app/build.gradle.kts          ndkVersion = "27.0.12077973"
-android/settings.gradle.kts           Kotlin 2.1.0
-pubspec.yaml                           fontes RobotoMono adicionadas
-lib/core/router/app_router.dart        rotas completas + nav helpers
-lib/features/auth/presentation/
-  login_screen.dart                    tela login/signup
-  onboarding_screen.dart               seleção de papel no 1º acesso
-lib/features/songs/
-  domain/song_parser.dart              parser formato .txt custom
-  presentation/cifra_view.dart         widget CifraView monoespaçado
-  presentation/songs_screen.dart       tela hinário
-  presentation/song_detail_screen.dart visualizador com controles
-  data/songs_provider.dart             SongsService (import/sync/publish)
-lib/features/groups/presentation/
-  group_detail_screen.dart             detalhe grupo (tabs hinário+celebrações)
-assets/fonts/RobotoMono-*.ttf          4 arquivos de fonte
-```
+| Task | Descrição | Status | Issue | Commit |
+|------|-----------|--------|-------|--------|
+| 1 | Setup base, Supabase config, schema Drift, modelos | ✅ Done | #10 | 5218503 |
+| 2 | Auth (login, signup, onboarding papel) | ✅ Done | #11 | 3d5e8fc |
+| 3 | Parser de cifras + CifraView (RobotoMono) | ✅ Done | #12 | 3d5e8fc |
+| 4 | Hinário local + importação de .txt | ✅ Done | #13 | 3d5e8fc |
+| 5 | Grupos, RLS, gestão de membros | ⏳ Todo | #14 | — |
+| 6 | Sync músicas Coordenador → Supabase → Membros | ⏳ Todo | #15 | — |
+| 7 | Montador de Celebração (Rito Romano) | ⏳ Todo | #16 | — |
+| 8 | Modo Performance (wakelock, dark mode, rolagem) | ⏳ Todo | #17 | — |
+| 9 | APK release + deploy web Vercel | ⏳ Todo | #18 | — |
 
 ---
 
@@ -84,71 +37,122 @@ assets/fonts/RobotoMono-*.ttf          4 arquivos de fonte
 
 | Item | Valor |
 |------|-------|
-| Workspace | `d:\Vozes_da_Catedral` |
-| Flutter SDK | `C:\Flutter\flutter` |
+| Workspace local | `d:\Vozes_da_Catedral` |
+| Flutter SDK | `C:\Flutter\flutter` (v3.29.0, Dart 3.7.0) |
 | Supabase Project ID | `npujroyocclobjrpeaed` |
 | Supabase URL | `https://npujroyocclobjrpeaed.supabase.co` |
-| Anon key | Ver `.env` ou `lib/core/config/supabase_config.dart` |
-| Dispositivo Android | Samsung SM-A546E, serial `RQCW701905N`, Android 16 |
-| GitHub | https://github.com/abpaula77/Vozes_da_Catedral |
-| GitHub Project | https://github.com/users/abpaula77/projects/3 |
+| Supabase Anon Key | Ver `d:\Vozes_da_Catedral\.env` ou `lib/core/config/supabase_config.dart` |
+| Dispositivo Android | Samsung SM-A546E · serial `RQCW701905N` · Android 16 (API 36) |
+| GitHub CLI | autenticado como `abpaula77` |
 
 ---
 
-## Arquitetura Resumida
+## Problema de Build Android — Ação Necessária
+
+O primeiro build no dispositivo físico foi **interrompido antes de concluir**. Ainda não sabemos se o app compila e roda.
+
+### Para retomar o build:
+
+```bash
+cd d:\Vozes_da_Catedral
+adb devices   # confirmar que RQCW701905N aparece como "device"
+flutter clean
+flutter run -d RQCW701905N
+```
+
+Se ocorrer erro de Kotlin cache (warnings sobre drives C: e D:), são não-fatais — o build continua mesmo assim. Se falhar com outro erro, ver seção "Fixes Android já aplicados" abaixo.
+
+### Fixes Android já aplicados:
+- `android/settings.gradle.kts` → Kotlin `2.1.0` (era 1.8.22)
+- `android/app/build.gradle.kts` → `ndkVersion = "27.0.12077973"` (era flutter.ndkVersion)
+
+---
+
+## Supabase — Schema já aplicado ✅
+
+O arquivo `supabase/schema.sql` foi executado no SQL Editor do Supabase dashboard.
+Tabelas criadas: `users`, `grupos`, `membros_grupo`, `musicas`, `celebracoes`, `itens_celebracao`
+Trigger: auto-criação de perfil no `auth.users` ao fazer signup
+RLS: Coordenador tem escrita no grupo, Membro somente leitura
+
+---
+
+## Arquitetura Atual (o que está implementado)
 
 ```
 lib/
+├── main.dart                             inicializa Supabase + ProviderScope
+├── app.dart                              MaterialApp.router + temas
 ├── core/
-│   ├── config/supabase_config.dart      credenciais Supabase
+│   ├── config/supabase_config.dart       URL + anon key via dart-define
 │   ├── database/
-│   │   ├── tables.dart                  definição das 5 tabelas Drift
-│   │   ├── app_database.dart            database + queries
-│   │   ├── app_database.g.dart          gerado pelo build_runner
-│   │   └── database_provider.dart       provider Riverpod
-│   ├── router/app_router.dart           go_router + redirect auth
-│   └── theme/app_theme.dart             temas claro/escuro (altar-friendly)
+│   │   ├── tables.dart                   5 tabelas Drift
+│   │   ├── app_database.dart             queries + DAOs
+│   │   ├── app_database.g.dart           gerado (build_runner)
+│   │   └── database_provider.dart        Provider<AppDatabase>
+│   ├── router/app_router.dart            GoRouter + redirect auth + nav helpers
+│   └── theme/app_theme.dart              tema claro/escuro (dark otimizado altar)
 └── features/
     ├── auth/
     │   ├── domain/user_model.dart
     │   └── presentation/
-    │       ├── auth_provider.dart        AuthService + providers
-    │       ├── login_screen.dart
-    │       └── onboarding_screen.dart
+    │       ├── auth_provider.dart         AuthService, supabaseProvider, authSessionProvider
+    │       ├── login_screen.dart          login + signup email/senha
+    │       └── onboarding_screen.dart     seleção papel (Coordenador/Membro) 1º acesso
     ├── groups/
-    │   ├── domain/group_model.dart       PapelGrupo enum
-    │   ├── data/groups_provider.dart     GruposService
+    │   ├── domain/group_model.dart        GrupoModel, PapelGrupo enum
+    │   ├── data/groups_provider.dart      GruposService (createGrupo, syncGrupos, addMembro, removeMembro)
     │   └── presentation/
-    │       ├── groups_screen.dart        lista de grupos
-    │       └── group_detail_screen.dart  tabs hinário/celebrações
+    │       ├── groups_screen.dart         lista grupos + FAB criar grupo
+    │       └── group_detail_screen.dart   tabs: Hinário | Celebrações (placeholder)
     ├── songs/
     │   ├── domain/
-    │   │   ├── song_model.dart           SongModel, SongContent, SongSection
-    │   │   └── song_parser.dart          parser .txt → JSON
-    │   ├── data/songs_provider.dart      SongsService
+    │   │   ├── song_model.dart            SongModel, SongContent, SongSection, SongLine
+    │   │   └── song_parser.dart           parser .txt → JSON (seções, cifra+letra)
+    │   ├── data/songs_provider.dart       SongsService (importFromFile, publishMusicas, syncMusicas)
     │   └── presentation/
-    │       ├── cifra_view.dart           widget CifraView ⭐
-    │       ├── songs_screen.dart         hinário
-    │       └── song_detail_screen.dart   visualizador
+    │       ├── cifra_view.dart            ⭐ CifraView com RobotoMono, toggle cifras, font size
+    │       ├── songs_screen.dart          hinário com import .txt, delete, sync
+    │       └── song_detail_screen.dart    visualizador CifraView + controles fonte/toggle
     ├── celebrations/
-    │   └── domain/celebration_model.dart MomentoLiturgico enum (12 momentos)
+    │   └── domain/celebration_model.dart  CelebracaoModel, MomentoLiturgico enum (12 momentos Rito Romano)
     └── splash/presentation/splash_screen.dart
 ```
+
+### Rotas (go_router)
+```
+/                   → SplashScreen (redireciona para /login ou /groups)
+/login              → LoginScreen
+/onboarding         → OnboardingScreen (seleção de papel no 1º login)
+/groups             → GroupsScreen
+/groups/:grupoId    → GroupDetailScreen
+/groups/:grupoId/songs/:musicaId → SongDetailScreen
+```
+
+### Fluxo de auth
+1. Splash verifica sessão Supabase
+2. Se logado: busca perfil em `users` → se não existe → `/onboarding` → se existe → `/groups`
+3. Se não logado → `/login`
+4. Qualquer mudança na sessão atualiza o router via `_AuthNotifier`
 
 ---
 
 ## Modelo de Dados Supabase
 
-```sql
-users              id, nome, email, foto, papel
-grupos             id, nome, descricao, criado_por
-membros_grupo      grupo_id, user_id, papel (coordenador|membro)
+```
+users              id (uuid, FK auth.users), nome, email, foto, papel
+grupos             id, nome, descricao, criado_por (FK users)
+membros_grupo      grupo_id + user_id (PK composta), papel (coordenador|membro)
 musicas            id, grupo_id, titulo, tom_original, bpm, categorias[], conteudo_raw, conteudo_json
 celebracoes        id, grupo_id, titulo, data_hora, criado_por
 itens_celebracao   id, celebracao_id, musica_id, ordem, momento_liturgico, observacao
 ```
 
-**RLS**: Coordenador tem escrita em tudo do seu grupo. Membro tem somente leitura em músicas, celebrações e itens.
+**RLS resumido:**
+- `users`: leitura própria + busca por email (para adicionar membros)
+- `grupos`: leitura para membros, escrita para coordenador/criador
+- `membros_grupo`: leitura para membros do grupo, escrita para coordenador
+- `musicas`, `celebracoes`, `itens_celebracao`: leitura para membros, escrita para coordenador
 
 ---
 
@@ -169,37 +173,107 @@ Senhor Deus do Universo
 [REFRAO]
 D        A
 Hosana nas alturas!
+G        A  D
+Hosana nas alturas!
 ```
+
+Seções suportadas: ESTROFE, REFRAO/REFRÃO, PONTE, PRE-REFRAO, INTRO, OUTRO, CODA, VERSO
 
 ---
 
 ## Próximas Tasks em Detalhe
 
-### Task 5 — Grupos e RLS
-- Tela de membros do grupo (Coordenador only)
-- Adicionar membro por e-mail → busca em `users` por email
-- Remover membro
-- Testar isolamento: membro não vê grupo de outro usuário
+### Task 5 — Grupos, papéis e controle de acesso (issue #14)
+O `GruposService` já existe em `lib/features/groups/data/groups_provider.dart` com:
+- `createGrupo(nome, descricao)` — cria no Supabase + SQLite local
+- `syncGrupos()` — baixa grupos do usuário para SQLite
+- `addMembro(grupoId, email, papel)` — busca usuário por email e adiciona
+- `removeMembro(grupoId, userId)` — remove membro
 
-### Task 6 — Sync
-- `SongsService.publishMusicas(grupoId)` — já implementado, testar
-- `SongsService.syncMusicas(grupoId)` — já implementado, testar
-- Sync de celebrações (ainda não implementado)
+**O que falta implementar:**
+- Tela de listagem de membros de um grupo
+- Sync automático ao abrir o app (chamar `syncGrupos()` no boot)
+- Testar RLS: membro não deve ver grupos de outros usuários
+- Botão "Sincronizar grupos" na GroupsScreen
 
-### Task 7 — Montador de Celebração
-- Tela nova celebração: data/hora + título
-- Lista dos 12 momentos do Rito Romano (ver `MomentoLiturgico` enum)
-- Por momento: selecionar música do hinário local + campo de observação
-- Persistência local (Drift) + sync Supabase
+### Task 6 — Sincronização de músicas (issue #15)
+O `SongsService` já existe em `lib/features/songs/data/songs_provider.dart` com:
+- `publishMusicas(grupoId)` — já implementado (upload local → Supabase)
+- `syncMusicas(grupoId)` — já implementado (download Supabase → local)
 
-### Task 8 — Modo Performance
-- Usar `wakelock_plus` para manter tela ativa
-- Rolagem contínua pela celebração inteira (todas as músicas em sequência)
-- Controles flutuantes: fonte+/-, toggle cifras, tema dark/light
-- Dark mode com cores de baixo brilho (já definido em AppTheme.dark)
-- Funciona 100% offline
+**O que falta:**
+- Sync de celebrações (não implementado ainda)
+- UI de último sync com timestamp
+- Testar fluxo completo: Coordenador publica → Membro sincroniza → usa offline
 
-### Task 9 — Build e Deploy
-- `flutter build apk --release` → distribuir via WhatsApp/Drive
-- `flutter build web` → deploy Vercel (gratuito)
-- Configurar ícone do app (substituir ícone padrão Flutter)
+### Task 7 — Montador de Celebração (issue #16)
+O `MomentoLiturgico` enum já existe com os 12 momentos.
+O `defaultRitoRomano(celebracaoId)` factory já cria a estrutura vazia.
+
+**O que falta implementar:**
+- `CelebracoesService` com createCelebracao, syncCelebracoes
+- `CelebracaoScreen` — form com data/hora + título
+- `CelebracaoDetailScreen` — lista dos 12 momentos com slot de música por momento
+- Seletor de música: abre hinário local e vincula ao momento
+- Campo de observações por momento
+- Persistência: SQLite local + Supabase sync
+
+### Task 8 — Modo Performance (issue #17)
+**O que implementar:**
+- `PerformanceScreen` — recebe celebracaoId, carrega todos os itens offline do SQLite
+- `wakelock_plus`: `WakelockPlus.enable()` ao entrar, `disable()` ao sair
+- Rolagem contínua: `ListView` com todas as músicas da celebração em sequência
+- Barra flutuante de controles: fonte+/-, toggle cifras, tema dark/light
+- Navegação rápida: índice lateral ou bottom bar com os momentos
+- Dark mode: já configurado em `AppTheme.dark` (surface `#1A1A1A`, onSurface `#E8E0D5`)
+
+### Task 9 — Build e Deploy (issue #18)
+```bash
+# APK release (sideload Android)
+flutter build apk --release
+# Arquivo gerado: build/app/outputs/flutter-apk/app-release.apk
+
+# Web
+flutter build web
+# Deploy: vercel --prod (instalar com npm i -g vercel)
+```
+- Antes do release: trocar ícone padrão Flutter (ic_launcher.png em todas as densidades)
+- Criar release no GitHub com o APK anexado
+
+---
+
+## Comandos Úteis
+
+```bash
+# Rodar no Android
+flutter run -d RQCW701905N
+
+# Regenerar código Drift após mudar tabelas
+dart run build_runner build --delete-conflicting-outputs
+
+# Verificar problemas de código
+flutter analyze
+
+# Limpar build cache
+flutter clean
+
+# Ver dispositivos disponíveis
+flutter devices
+adb devices
+```
+
+---
+
+## Como Retomar com Outra IA
+
+1. Leia este arquivo (`HANDOFF.md`)
+2. Confirme o dispositivo Android: `adb devices` → deve mostrar `RQCW701905N device`
+3. Tente o build: `flutter run -d RQCW701905N` em `d:\Vozes_da_Catedral`
+4. Se o build funcionar, o app deve mostrar tela de splash → login
+5. Crie uma conta de teste no app → será redirecionado para onboarding
+6. **Lembre o usuário:** antes de testar grupos/músicas, precisa criar um grupo pelo app
+7. Continue pela **Task 5** (testar o que já está implementado + completar partes faltantes)
+
+> Para atualizar o GitHub Projects ao concluir cada task:
+> `gh issue close <NUMBER> --repo abpaula77/Vozes_da_Catedral --comment "Task concluída: <descrição>"`
+> E atualizar o status no board via `gh project item-edit`
