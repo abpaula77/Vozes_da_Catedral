@@ -6,11 +6,47 @@ import '../../auth/presentation/auth_provider.dart';
 import '../data/groups_provider.dart';
 import '../domain/group_model.dart';
 
-class GroupsScreen extends ConsumerWidget {
+class GroupsScreen extends ConsumerStatefulWidget {
   const GroupsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GroupsScreen> createState() => _GroupsScreenState();
+}
+
+class _GroupsScreenState extends ConsumerState<GroupsScreen> {
+  bool _isSyncing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncGroups(showSuccess: false);
+    });
+  }
+
+  Future<void> _syncGroups({bool showSuccess = true}) async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    try {
+      await ref.read(gruposServiceProvider).syncGrupos();
+      if (mounted && showSuccess) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Grupos sincronizados.')));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao sincronizar grupos: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSyncing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final gruposAsync = ref.watch(gruposProvider);
     final theme = Theme.of(context);
 
@@ -18,6 +54,18 @@ class GroupsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Meus Grupos'),
         actions: [
+          IconButton(
+            icon:
+                _isSyncing
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.sync),
+            tooltip: 'Sincronizar grupos',
+            onPressed: _isSyncing ? null : _syncGroups,
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sair',
@@ -34,9 +82,11 @@ class GroupsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.group_outlined,
-                      size: 64,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+                  Icon(
+                    Icons.group_outlined,
+                    size: 64,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Nenhum grupo ainda.',
@@ -78,48 +128,54 @@ class GroupsScreen extends ConsumerWidget {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Novo Grupo'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nomeController,
-              decoration: const InputDecoration(
-                labelText: 'Nome do grupo',
-                hintText: 'ex: Coral 19h',
-                border: OutlineInputBorder(),
-              ),
-              textCapitalization: TextCapitalization.words,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Novo Grupo'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nomeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome do grupo',
+                    hintText: 'ex: Coral 19h',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descController,
+                  decoration: const InputDecoration(
+                    labelText: 'Descrição (opcional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(
-                labelText: 'Descrição (opcional)',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar'),
               ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+              FilledButton(
+                onPressed: () async {
+                  final nome = nomeController.text.trim();
+                  if (nome.isEmpty) return;
+                  Navigator.pop(ctx);
+                  await ref
+                      .read(gruposServiceProvider)
+                      .createGrupo(
+                        nome: nome,
+                        descricao: descController.text.trim(),
+                      );
+                  ref.invalidate(gruposProvider);
+                },
+                child: const Text('Criar'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () async {
-              final nome = nomeController.text.trim();
-              if (nome.isEmpty) return;
-              Navigator.pop(ctx);
-              await ref.read(gruposServiceProvider).createGrupo(nome: nome, descricao: descController.text.trim());
-              ref.invalidate(gruposProvider);
-            },
-            child: const Text('Criar'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -135,14 +191,16 @@ class _GrupoCard extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.primaryContainer,
-          child: Icon(Icons.music_note,
-              color: theme.colorScheme.onPrimaryContainer),
+          child: Icon(
+            Icons.music_note,
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
         ),
-        title: Text(grupo.nome,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: grupo.descricao != null
-            ? Text(grupo.descricao!)
-            : null,
+        title: Text(
+          grupo.nome,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: grupo.descricao != null ? Text(grupo.descricao!) : null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -168,17 +226,19 @@ class _RoleBadge extends StatelessWidget {
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isCoordenador
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.surfaceContainerHighest,
+        color:
+            isCoordenador
+                ? theme.colorScheme.primaryContainer
+                : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         isCoordenador ? 'Coordenador' : 'Membro',
         style: theme.textTheme.labelSmall?.copyWith(
-          color: isCoordenador
-              ? theme.colorScheme.onPrimaryContainer
-              : theme.colorScheme.onSurfaceVariant,
+          color:
+              isCoordenador
+                  ? theme.colorScheme.onPrimaryContainer
+                  : theme.colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),
       ),

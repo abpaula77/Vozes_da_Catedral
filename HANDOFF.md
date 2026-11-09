@@ -25,7 +25,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 2 | Auth (login, signup, onboarding papel) | ✅ Done | #11 | 3d5e8fc |
 | 3 | Parser de cifras + CifraView (RobotoMono) | ✅ Done | #12 | 3d5e8fc |
 | 4 | Hinário local + importação de .txt | ✅ Done | #13 | 3d5e8fc |
-| 5 | Grupos, RLS, gestão de membros | ⏳ Todo | #14 | — |
+| 5 | Grupos, RLS, gestão de membros | ✅ Implementada; script aplicado no Supabase | #14 | — |
 | 6 | Sync músicas Coordenador → Supabase → Membros | ⏳ Todo | #15 | — |
 | 7 | Montador de Celebração (Rito Romano) | ⏳ Todo | #16 | — |
 | 8 | Modo Performance (wakelock, dark mode, rolagem) | ⏳ Todo | #17 | — |
@@ -47,11 +47,11 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 
 ---
 
-## Problema de Build Android — Ação Necessária
+## Build Android
 
-O primeiro build no dispositivo físico foi **interrompido antes de concluir**. Ainda não sabemos se o app compila e roda.
+O APK debug foi compilado e instalado no Samsung (`RQCW701905N`), e o log mostra a inicialização do Supabase. O `flutter run` encerrou com erro ao conectar ao protocolo de depuração local; a sessão de depuração interativa não foi validada. `flutter build apk --debug --no-pub` concluiu com sucesso.
 
-### Para retomar o build:
+### Para repetir:
 
 ```bash
 cd d:\Vozes_da_Catedral
@@ -60,7 +60,7 @@ flutter clean
 flutter run -d RQCW701905N
 ```
 
-Se ocorrer erro de Kotlin cache (warnings sobre drives C: e D:), são não-fatais — o build continua mesmo assim. Se falhar com outro erro, ver seção "Fixes Android já aplicados" abaixo.
+Se o protocolo de depuração falhar após a instalação, valide a compilação com `flutter build apk --debug --no-pub`. O Kotlin também pode emitir erros de cache incremental entre `C:` e `D:`; nesta sessão, apesar deles, o APK foi gerado.
 
 ### Fixes Android já aplicados:
 - `android/settings.gradle.kts` → Kotlin `2.1.0` (era 1.8.22)
@@ -104,7 +104,8 @@ lib/
     │   ├── data/groups_provider.dart      GruposService (createGrupo, syncGrupos, addMembro, removeMembro)
     │   └── presentation/
     │       ├── groups_screen.dart         lista grupos + FAB criar grupo
-    │       └── group_detail_screen.dart   tabs: Hinário | Celebrações (placeholder)
+    │       ├── group_detail_screen.dart   tabs: Hinário | Celebrações (placeholder)
+    │       └── group_members_screen.dart  lista, convite e remoção de membros
     ├── songs/
     │   ├── domain/
     │   │   ├── song_model.dart            SongModel, SongContent, SongSection, SongLine
@@ -126,6 +127,7 @@ lib/
 /onboarding         → OnboardingScreen (seleção de papel no 1º login)
 /groups             → GroupsScreen
 /groups/:grupoId    → GroupDetailScreen
+/groups/:grupoId/members → GroupMembersScreen
 /groups/:grupoId/songs/:musicaId → SongDetailScreen
 ```
 
@@ -149,7 +151,7 @@ itens_celebracao   id, celebracao_id, musica_id, ordem, momento_liturgico, obser
 ```
 
 **RLS resumido:**
-- `users`: leitura própria + busca por email (para adicionar membros)
+- `users`: leitura própria + perfis de pessoas do mesmo grupo; convites por RPC restrita a coordenadores
 - `grupos`: leitura para membros, escrita para coordenador/criador
 - `membros_grupo`: leitura para membros do grupo, escrita para coordenador
 - `musicas`, `celebracoes`, `itens_celebracao`: leitura para membros, escrita para coordenador
@@ -190,11 +192,15 @@ O `GruposService` já existe em `lib/features/groups/data/groups_provider.dart` 
 - `addMembro(grupoId, email, papel)` — busca usuário por email e adiciona
 - `removeMembro(grupoId, userId)` — remove membro
 
-**O que falta implementar:**
-- Tela de listagem de membros de um grupo
-- Sync automático ao abrir o app (chamar `syncGrupos()` no boot)
-- Testar RLS: membro não deve ver grupos de outros usuários
-- Botão "Sincronizar grupos" na GroupsScreen
+**Implementado nesta continuação:**
+- Tela de membros com papéis, convite por e-mail e remoção para coordenadores
+- Sincronização automática ao abrir a lista de grupos e botão manual com erros visíveis
+- Reconciliação do cache SQLite com a lista remota do usuário
+- RLS sem busca pública do diretório de usuários; coordenador procura convite por RPC, e auto-inclusão em grupo fica limitada ao criador
+
+**Validação operacional pendente:**
+- Testar com uma conta membro que a lista de grupos não inclui grupos aos quais ela não pertence; esse teste multiusuário remoto ainda não foi executado nesta sessão
+- A migration `supabase/migrations/20261108_task5_group_access.sql` foi aplicada no Supabase em 08/11/2026
 
 ### Task 6 — Sincronização de músicas (issue #15)
 O `SongsService` já existe em `lib/features/songs/data/songs_provider.dart` com:

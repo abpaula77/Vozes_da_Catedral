@@ -112,7 +112,16 @@ returns boolean as $$
     select 1 from public.membros_grupo
     where grupo_id = p_grupo_id and user_id = auth.uid()
   );
-$$ language sql security definer stable;
+$$ language sql security definer stable set search_path = '';
+
+-- Group creators may add themselves when creating the group.
+create or replace function public.is_group_creator(p_grupo_id uuid)
+returns boolean as $$
+  select exists (
+    select 1 from public.grupos
+    where id = p_grupo_id and criado_por = auth.uid()
+  );
+$$ language sql security definer stable set search_path = '';
 
 -- Helper function: check if the current user is coordenador of a group
 create or replace function public.is_group_coordinator(p_grupo_id uuid)
@@ -133,9 +142,31 @@ create policy "Users can update their own profile"
 create policy "Users can insert their own profile"
   on public.users for insert with check (id = auth.uid());
 
--- Allow lookup by email (for adding group members)
-create policy "Users can search others by email"
-  on public.users for select using (true);
+create policy "Group members can read fellow member profiles"
+  on public.users for select using (
+    id = auth.uid()
+    or exists (
+      select 1 from public.membros_grupo mg
+      where mg.user_id = users.id
+        and public.is_group_member(mg.grupo_id)
+    )
+  );
+
+-- Coordinators can look up an invitee without exposing the user directory.
+create or replace function public.find_group_invitee(
+  p_grupo_id uuid,
+  p_email text
+)
+returns uuid as $$
+  select u.id
+  from public.users u
+  where lower(u.email) = lower(p_email)
+    and public.is_group_coordinator(p_grupo_id)
+  limit 1;
+$$ language sql security definer stable set search_path = '';
+
+revoke all on function public.find_group_invitee(uuid, text) from public;
+grant execute on function public.find_group_invitee(uuid, text) to authenticated;
 
 -- ── grupos policies ───────────────────────────────────────────────────────────
 create policy "Members can read their groups"
@@ -170,7 +201,10 @@ create policy "Coordinators can remove members"
 -- Allow self-insert for new group creation (creator adds themselves)
 create policy "Users can add themselves to a group"
   on public.membros_grupo for insert
-  with check (user_id = auth.uid());
+  with check (
+    user_id = auth.uid()
+    and public.is_group_creator(grupo_id)
+  );
 
 -- ── musicas policies ──────────────────────────────────────────────────────────
 create policy "Group members can read songs"

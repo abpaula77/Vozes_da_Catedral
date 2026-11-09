@@ -5,13 +5,15 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [
-  UsersLocal,
-  GruposLocal,
-  MusicasLocal,
-  CelebracoesLocal,
-  ItensCelebracaoLocal,
-])
+@DriftDatabase(
+  tables: [
+    UsersLocal,
+    GruposLocal,
+    MusicasLocal,
+    CelebracoesLocal,
+    ItensCelebracaoLocal,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -33,6 +35,8 @@ class AppDatabase extends _$AppDatabase {
   // ── Groups ─────────────────────────────────────────────────────────────────
 
   Stream<List<GruposLocalData>> watchGrupos() => select(gruposLocal).watch();
+
+  Future<List<GruposLocalData>> getGrupos() => select(gruposLocal).get();
 
   Future<void> upsertGrupo(GruposLocalCompanion grupo) =>
       into(gruposLocal).insertOnConflictUpdate(grupo);
@@ -66,8 +70,8 @@ class AppDatabase extends _$AppDatabase {
           .watch();
 
   Future<CelebracoesLocalData?> getCelebracao(String id) =>
-      (select(celebracoesLocal)..where((t) => t.id.equals(id)))
-          .getSingleOrNull();
+      (select(celebracoesLocal)
+        ..where((t) => t.id.equals(id))).getSingleOrNull();
 
   Future<void> upsertCelebracao(CelebracoesLocalCompanion celebracao) =>
       into(celebracoesLocal).insertOnConflictUpdate(celebracao);
@@ -78,25 +82,25 @@ class AppDatabase extends _$AppDatabase {
   // ── Celebration Items ──────────────────────────────────────────────────────
 
   Stream<List<ItensCelebracaoLocalData>> watchItensByCelebracao(
-          String celebracaoId) =>
+    String celebracaoId,
+  ) =>
       (select(itensCelebracaoLocal)
             ..where((t) => t.celebracaoId.equals(celebracaoId))
             ..orderBy([(t) => OrderingTerm.asc(t.ordem)]))
           .watch();
 
   Future<List<ItensCelebracaoLocalData>> getItensByCelebracao(
-          String celebracaoId) =>
+    String celebracaoId,
+  ) =>
       (select(itensCelebracaoLocal)
             ..where((t) => t.celebracaoId.equals(celebracaoId))
             ..orderBy([(t) => OrderingTerm.asc(t.ordem)]))
           .get();
 
-  Future<void> upsertItemCelebracao(
-          ItensCelebracaoLocalCompanion item) =>
+  Future<void> upsertItemCelebracao(ItensCelebracaoLocalCompanion item) =>
       into(itensCelebracaoLocal).insertOnConflictUpdate(item);
 
   Future<void> deleteItensByCelebracao(String celebracaoId) =>
       (delete(itensCelebracaoLocal)
-            ..where((t) => t.celebracaoId.equals(celebracaoId)))
-          .go();
+        ..where((t) => t.celebracaoId.equals(celebracaoId))).go();
 }

@@ -9,17 +9,27 @@ import '../domain/group_model.dart';
 /// Stream of groups the current user belongs to (from local DB)
 final gruposProvider = StreamProvider<List<GrupoModel>>((ref) {
   final db = ref.watch(databaseProvider);
-  return db.watchGrupos().map((rows) => rows
-      .map((r) => GrupoModel(
-            id: r.id,
-            nome: r.nome,
-            descricao: r.descricao,
-            criadoPor: r.criadoPor,
-            meuPapel: PapelGrupo.fromString(r.meuPapel),
-            updatedAt: r.updatedAt,
-          ))
-      .toList());
+  return db.watchGrupos().map(
+    (rows) =>
+        rows
+            .map(
+              (r) => GrupoModel(
+                id: r.id,
+                nome: r.nome,
+                descricao: r.descricao,
+                criadoPor: r.criadoPor,
+                meuPapel: PapelGrupo.fromString(r.meuPapel),
+                updatedAt: r.updatedAt,
+              ),
+            )
+            .toList(),
+  );
 });
+
+final membrosGrupoProvider =
+    FutureProvider.family<List<MembroGrupoModel>, String>((ref, grupoId) {
+      return ref.watch(gruposServiceProvider).getMembros(grupoId);
+    });
 
 /// Service for group CRUD and sync operations
 class GruposService {
@@ -35,11 +45,17 @@ class GruposService {
     final userId = _userId;
     if (userId == null) throw Exception('Usuário não autenticado');
 
-    final result = await (_supabase.from('grupos').insert({
-      'nome': nome,
-      'descricao': descricao,
-      'criado_por': userId,
-    }).select().single()) as Map<String, dynamic>;
+    final result =
+        await (_supabase
+                .from('grupos')
+                .insert({
+                  'nome': nome,
+                  'descricao': descricao,
+                  'criado_por': userId,
+                })
+                .select()
+                .single())
+            as Map<String, dynamic>;
 
     // Add creator as coordenador in membros_grupo
     await _supabase.from('membros_grupo').insert({
@@ -49,14 +65,16 @@ class GruposService {
     });
 
     // Persist locally
-    await _db.upsertGrupo(GruposLocalCompanion.insert(
-      id: result['id'] as String,
-      nome: nome,
-      descricao: drift.Value(descricao),
-      criadoPor: userId,
-      meuPapel: const drift.Value('coordenador'),
-      updatedAt: DateTime.now(),
-    ));
+    await _db.upsertGrupo(
+      GruposLocalCompanion.insert(
+        id: result['id'] as String,
+        nome: nome,
+        descricao: drift.Value(descricao),
+        criadoPor: userId,
+        meuPapel: const drift.Value('coordenador'),
+        updatedAt: DateTime.now(),
+      ),
+    );
 
     return result['id'] as String;
   }
@@ -66,23 +84,80 @@ class GruposService {
     final userId = _userId;
     if (userId == null) return;
 
-    final rows = await _supabase
-        .from('membros_grupo')
-        .select('papel, grupos(*)')
-        .eq('user_id', userId) as List<dynamic>;
+    final rows =
+        await _supabase
+                .from('membros_grupo')
+                .select('papel, grupos(*)')
+                .eq('user_id', userId)
+            as List<dynamic>;
 
+    final syncedGroupIds = <String>{};
     for (final row in rows) {
       final grupo = row['grupos'] as Map<String, dynamic>;
+      final grupoId = grupo['id'] as String;
+      syncedGroupIds.add(grupoId);
       final papel = row['papel'] as String;
-      await _db.upsertGrupo(GruposLocalCompanion.insert(
-        id: grupo['id'] as String,
-        nome: grupo['nome'] as String,
-        descricao: drift.Value(grupo['descricao'] as String?),
-        criadoPor: grupo['criado_por'] as String,
-        meuPapel: drift.Value(papel),
-        updatedAt: DateTime.now(),
-      ));
+      await _db.upsertGrupo(
+        GruposLocalCompanion.insert(
+          id: grupoId,
+          nome: grupo['nome'] as String,
+          descricao: drift.Value(grupo['descricao'] as String?),
+          criadoPor: grupo['criado_por'] as String,
+          meuPapel: drift.Value(papel),
+          updatedAt: DateTime.now(),
+        ),
+      );
     }
+
+    final localGroups = await _db.getGrupos();
+    for (final grupo in localGroups) {
+      if (!syncedGroupIds.contains(grupo.id)) {
+        await _db.deleteGrupo(grupo.id);
+      }
+    }
+  }
+
+  /// Fetch group members and their profiles.
+  Future<List<MembroGrupoModel>> getMembros(String grupoId) async {
+    final memberships =
+        await _supabase
+                .from('membros_grupo')
+                .select('user_id, papel')
+                .eq('grupo_id', grupoId)
+                .order('created_at')
+            as List<dynamic>;
+
+    if (memberships.isEmpty) return [];
+
+    final userIds =
+        memberships
+            .map((row) => (row as Map<String, dynamic>)['user_id'] as String)
+            .toList();
+    final profiles =
+        await _supabase
+                .from('users')
+                .select('id, nome, email')
+                .inFilter('id', userIds)
+            as List<dynamic>;
+    final profilesById = {
+      for (final profile in profiles)
+        (profile as Map<String, dynamic>)['id'] as String: profile,
+    };
+
+    return memberships.map((row) {
+      final membership = row as Map<String, dynamic>;
+      final userId = membership['user_id'] as String;
+      final profile = profilesById[userId];
+      if (profile == null) {
+        throw StateError('Perfil não encontrado para o membro $userId.');
+      }
+      return MembroGrupoModel(
+        userId: userId,
+        nome: profile['nome'] as String,
+        email: profile['email'] as String,
+        papel: PapelGrupo.fromString(membership['papel'] as String),
+      );
+    }).toList();
   }
 
   /// Add a member to a group by email (Coordenador only)
@@ -91,17 +166,20 @@ class GruposService {
     required String email,
     String papel = 'membro',
   }) async {
-    final user = await _supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .maybeSingle() as Map<String, dynamic>?;
+    final userId =
+        await _supabase.rpc(
+              'find_group_invitee',
+              params: {'p_grupo_id': grupoId, 'p_email': email.trim()},
+            )
+            as String?;
 
-    if (user == null) throw Exception('Usuário não encontrado com esse e-mail.');
+    if (userId == null) {
+      throw Exception('Usuário não encontrado com esse e-mail.');
+    }
 
-    await _supabase.from('membros_grupo').upsert({
+    await _supabase.from('membros_grupo').insert({
       'grupo_id': grupoId,
-      'user_id': user['id'],
+      'user_id': userId,
       'papel': papel,
     });
   }

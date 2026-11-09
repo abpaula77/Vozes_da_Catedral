@@ -14,10 +14,11 @@ class GroupDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gruposAsync = ref.watch(gruposProvider);
-    final theme = Theme.of(context);
 
     return gruposAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading:
+          () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('Erro: $e'))),
       data: (grupos) {
         final grupo = grupos.where((g) => g.id == grupoId).firstOrNull;
@@ -72,79 +73,22 @@ class _GroupDetailViewState extends ConsumerState<_GroupDetailView>
           ],
         ),
         actions: [
-          if (grupo.isCoordenador)
-            IconButton(
-              icon: const Icon(Icons.group_outlined),
-              tooltip: 'Gerenciar membros',
-              onPressed: () => _showMembrosSheet(context),
-            ),
+          IconButton(
+            icon: const Icon(Icons.group_outlined),
+            tooltip: 'Ver membros',
+            onPressed: () => context.pushGroupMembers(grupo.id),
+          ),
         ],
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          SongsScreen(
+          SongsScreen(grupoId: grupo.id, isCoordenador: grupo.isCoordenador),
+          _CelebracoesTab(
             grupoId: grupo.id,
             isCoordenador: grupo.isCoordenador,
           ),
-          _CelebracoesTab(grupoId: grupo.id, isCoordenador: grupo.isCoordenador),
         ],
-      ),
-    );
-  }
-
-  void _showMembrosSheet(BuildContext context) {
-    final emailController = TextEditingController();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-            24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Adicionar membro',
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: 'E-mail do membro',
-                prefixIcon: Icon(Icons.email_outlined),
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () async {
-                final email = emailController.text.trim();
-                if (email.isEmpty) return;
-                Navigator.pop(ctx);
-                try {
-                  await ref.read(gruposServiceProvider).addMembro(
-                        grupoId: widget.grupo.id,
-                        email: email,
-                      );
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('$email adicionado ao grupo.')),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Erro: $e')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Adicionar'),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -154,8 +98,7 @@ class _CelebracoesTab extends StatelessWidget {
   final String grupoId;
   final bool isCoordenador;
 
-  const _CelebracoesTab(
-      {required this.grupoId, required this.isCoordenador});
+  const _CelebracoesTab({required this.grupoId, required this.isCoordenador});
 
   @override
   Widget build(BuildContext context) {
@@ -164,22 +107,27 @@ class _CelebracoesTab extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_available_outlined,
-              size: 64,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.3)),
+          Icon(
+            Icons.event_available_outlined,
+            size: 64,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 16),
-          Text('Celebrações — Task 7',
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Celebrações — Task 7',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
-          Text('Em desenvolvimento',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5))),
+          Text(
+            'Em desenvolvimento',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
         ],
       ),
     );

@@ -7,6 +7,7 @@ import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/groups/presentation/group_detail_screen.dart';
+import '../../features/groups/presentation/group_members_screen.dart';
 import '../../features/groups/presentation/groups_screen.dart';
 import '../../features/songs/presentation/song_detail_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
@@ -18,9 +19,11 @@ class AppRoutes {
   static const onboarding = '/onboarding';
   static const groups = '/groups';
   static const groupDetail = '/groups/:grupoId';
+  static const groupMembers = '/groups/:grupoId/members';
   static const songDetail = '/groups/:grupoId/songs/:musicaId';
 
   static String groupDetailPath(String grupoId) => '/groups/$grupoId';
+  static String groupMembersPath(String grupoId) => '/groups/$grupoId/members';
   static String songDetailPath(String grupoId, String musicaId) =>
       '/groups/$grupoId/songs/$musicaId';
 }
@@ -66,15 +69,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: ':grupoId',
-            builder: (context, state) => GroupDetailScreen(
-              grupoId: state.pathParameters['grupoId']!,
-            ),
+            builder:
+                (context, state) => GroupDetailScreen(
+                  grupoId: state.pathParameters['grupoId']!,
+                ),
             routes: [
               GoRoute(
+                path: 'members',
+                builder:
+                    (context, state) => GroupMembersScreen(
+                      grupoId: state.pathParameters['grupoId']!,
+                    ),
+              ),
+              GoRoute(
                 path: 'songs/:musicaId',
-                builder: (context, state) => SongDetailScreen(
-                  musicaId: state.pathParameters['musicaId']!,
-                ),
+                builder:
+                    (context, state) => SongDetailScreen(
+                      musicaId: state.pathParameters['musicaId']!,
+                    ),
               ),
             ],
           ),
@@ -101,11 +113,12 @@ class _SplashRedirectorState extends ConsumerState<_SplashRedirector> {
       if (session != null) {
         // Check if user has completed onboarding (profile exists)
         final supabase = ref.read(supabaseProvider);
-        final profile = await supabase
-            .from('users')
-            .select('id')
-            .eq('id', session.user.id)
-            .maybeSingle();
+        final profile =
+            await supabase
+                .from('users')
+                .select('id')
+                .eq('id', session.user.id)
+                .maybeSingle();
 
         if (mounted) {
           if (profile == null) {
@@ -133,8 +146,10 @@ class _AuthNotifier extends ChangeNotifier {
 
 /// Navigation extension helpers
 extension AppNavigation on BuildContext {
-  void goGroupDetail(String grupoId) =>
-      go(AppRoutes.groupDetailPath(grupoId));
+  void goGroupDetail(String grupoId) => go(AppRoutes.groupDetailPath(grupoId));
+
+  void pushGroupMembers(String grupoId) =>
+      push(AppRoutes.groupMembersPath(grupoId));
 
   void pushSongDetail(String grupoId, String musicaId) =>
       push(AppRoutes.songDetailPath(grupoId, musicaId));
