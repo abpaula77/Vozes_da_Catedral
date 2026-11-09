@@ -115,11 +115,56 @@ flutter run
 
 ## Distribuição do Piloto (Android)
 
+Compile o APK para teste/sideload:
+
+```powershell
+flutter build apk --release
+```
+
+O arquivo será gerado em `build/app/outputs/flutter-apk/app-release.apk`.
+Sem uma chave de release configurada, o APK é assinado com a chave debug e
+serve apenas para testes. Para distribuir atualizações assinadas de forma
+consistente, crie e guarde uma chave privada fora do repositório:
+
+```powershell
+keytool -genkey -v -keystore "$HOME\vozes-da-catedral-release.jks" `
+  -keyalg RSA -keysize 2048 -validity 10000 -alias vozes
+```
+
+Crie `android/key.properties` (já ignorado pelo Git) apontando para a chave:
+
+```properties
+storePassword=SENHA_DO_KEYSTORE
+keyPassword=SENHA_DA_CHAVE
+keyAlias=vozes
+storeFile=C:/Users/SEU_USUARIO/vozes-da-catedral-release.jks
+```
+
+Não compartilhe nem perca a chave e as senhas. Builds release seguintes
+usarão essa chave automaticamente.
+
 Para instalar o APK diretamente no Android (sideload):
 
-1. No Android, acesse **Configurações > Segurança > Fontes desconhecidas** e habilite.
-2. Receba o arquivo `.apk` via WhatsApp ou Google Drive.
-3. Abra o arquivo e toque em **Instalar**.
+1. Transfira o arquivo APK para o aparelho.
+2. Autorize a instalação para o app usado para abrir o arquivo, se o Android solicitar.
+3. Abra o APK e toque em **Instalar**.
+
+## Build e publicação Web
+
+Gere os arquivos estáticos Flutter:
+
+```powershell
+flutter build web --release
+```
+
+O site estará em `build/web`. Para publicar na Vercel, instale e autentique o
+CLI (`npm install --global vercel` e `vercel login`) e execute `vercel --prod`
+na raiz do projeto. O `vercel.json` aponta para `build/web` e redireciona rotas
+do app para a entrada Flutter.
+
+Os builds móveis e web usam a configuração Supabase definida em
+`lib/core/config/supabase_config.dart`; use somente uma chave publicável/anon
+protegida pelas políticas RLS, nunca uma chave `service_role`.
 
 ---
 

@@ -13,7 +13,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit:** `032872a` — feat: montar celebracoes com suporte offline
+**Último commit:** consulte `git log --oneline`
 
 ---
 
@@ -25,11 +25,11 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 2 | Auth (login, signup, onboarding papel) | ✅ Done | #11 | 3d5e8fc |
 | 3 | Parser de cifras + CifraView (RobotoMono) | ✅ Done | #12 | 3d5e8fc |
 | 4 | Hinário local + importação de .txt | ✅ Done | #13 | 3d5e8fc |
-| 5 | Grupos, RLS, gestão de membros | ✅ Correção via RPC aplicada no Supabase; smoke test pendente | #14 | — |
-| 6 | Catálogo compartilhado e sync de músicas | ✅ Catálogo/cópias aplicado no Supabase; teste entre grupos pendente | #15 | — |
-| 7 | Montador de Celebração (Rito Romano) | ✅ Implementado e aberto no aparelho; validação funcional Supabase/offline pendente | #16 | — |
-| 8 | Modo Performance (wakelock, dark mode, rolagem) | ✅ Implementado e testado no aparelho | #17 | — |
-| 9 | APK release + deploy web Vercel | 🚧 Em implementação | #18 | — |
+| 5 | Grupos, RLS, gestão de membros | ✅ Concluída | #14 | fd79835 |
+| 6 | Catálogo compartilhado e sync de músicas | ✅ Concluída | #15 | 7b7bc29 |
+| 7 | Montador de Celebração (Rito Romano) | ✅ Concluída, com correção de sincronização | #16 | cb28a56 |
+| 8 | Modo Performance (wakelock, dark mode, rolagem) | ✅ Implementada e testada no aparelho | #17 | 5ed8db9 |
+| 9 | APK release + deploy web Vercel | 🚧 Builds validados; deploy depende de acesso à Vercel | #18 | — |
 
 ---
 
@@ -278,11 +278,14 @@ flutter build apk --release
 # Arquivo gerado: build/app/outputs/flutter-apk/app-release.apk
 
 # Web
-flutter build web
+flutter build web --release
 # Deploy: vercel --prod (instalar com npm i -g vercel)
 ```
-- Antes do release: trocar ícone padrão Flutter (ic_launcher.png em todas as densidades)
-- Criar release no GitHub com o APK anexado
+- Ícone, splash, nome do app e manifestos Android/Web foram personalizados com a identidade provisória do projeto
+- O release usa `android/key.properties` quando configurado; sem chave usa assinatura debug, apenas para testes
+- `vercel.json` publica `build/web` e redireciona rotas do app para a entrada Flutter
+- `flutter build apk --release` e `flutter build web --release` validados; APK instalado e aberto no Samsung SM-A546E
+- Publicação Vercel ainda requer CLI instalado, login e projeto configurado; não considerar deploy concluído antes de validar uma URL publicada
 
 ---
 
