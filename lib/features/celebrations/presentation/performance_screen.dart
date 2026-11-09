@@ -28,7 +28,6 @@ class PerformanceScreen extends ConsumerStatefulWidget {
 
 class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
     with WidgetsBindingObserver {
-  final _scrollController = ScrollController();
   final Map<String, GlobalKey> _momentKeys = {};
 
   double _fontSize = 20;
@@ -71,7 +70,6 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _scrollController.dispose();
     unawaited(_setScreenAwake(false));
     super.dispose();
   }
@@ -89,6 +87,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final performanceTheme = _darkMode ? AppTheme.dark : AppTheme.light;
     final itemsAsync = ref.watch(
       itensByCelebracaoProvider(widget.celebracaoId),
     );
@@ -98,7 +97,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
     );
 
     return Theme(
-      data: _darkMode ? AppTheme.dark : AppTheme.light,
+      data: performanceTheme,
       child: Scaffold(
         appBar: AppBar(
           title: Text(
@@ -106,30 +105,6 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
             overflow: TextOverflow.ellipsis,
           ),
           actions: [
-            IconButton(
-              tooltip: _showChords ? 'Ocultar cifras' : 'Mostrar cifras',
-              icon: Icon(
-                _showChords ? Icons.music_note : Icons.music_off_outlined,
-              ),
-              onPressed: () => setState(() => _showChords = !_showChords),
-            ),
-            IconButton(
-              tooltip: 'Diminuir fonte',
-              icon: const Icon(Icons.text_decrease),
-              onPressed:
-                  _fontSize > 12 ? () => setState(() => _fontSize -= 2) : null,
-            ),
-            IconButton(
-              tooltip: 'Aumentar fonte',
-              icon: const Icon(Icons.text_increase),
-              onPressed:
-                  _fontSize < 34 ? () => setState(() => _fontSize += 2) : null,
-            ),
-            IconButton(
-              tooltip: _darkMode ? 'Usar tema claro' : 'Usar tema escuro',
-              icon: Icon(_darkMode ? Icons.light_mode : Icons.dark_mode),
-              onPressed: () => setState(() => _darkMode = !_darkMode),
-            ),
             itemsAsync.maybeWhen(
               data:
                   (items) => PopupMenuButton<String>(
@@ -179,6 +154,46 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
                 data: (songs) => _buildPerformance(items, songs),
               ),
         ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Material(
+            elevation: 8,
+            color: performanceTheme.colorScheme.surfaceContainer,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                  tooltip: 'Diminuir fonte',
+                  icon: const Icon(Icons.text_decrease),
+                  onPressed:
+                      _fontSize > 12
+                          ? () => setState(() => _fontSize -= 2)
+                          : null,
+                ),
+                IconButton(
+                  tooltip: 'Aumentar fonte',
+                  icon: const Icon(Icons.text_increase),
+                  onPressed:
+                      _fontSize < 34
+                          ? () => setState(() => _fontSize += 2)
+                          : null,
+                ),
+                IconButton(
+                  tooltip: _showChords ? 'Ocultar cifras' : 'Mostrar cifras',
+                  icon: Icon(
+                    _showChords ? Icons.music_note : Icons.music_off_outlined,
+                  ),
+                  onPressed: () => setState(() => _showChords = !_showChords),
+                ),
+                IconButton(
+                  tooltip: _darkMode ? 'Usar tema claro' : 'Usar tema escuro',
+                  icon: Icon(_darkMode ? Icons.light_mode : Icons.dark_mode),
+                  onPressed: () => setState(() => _darkMode = !_darkMode),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -194,57 +209,55 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
     }
 
     final songsById = {for (final song in songs) song.id: song};
-    return ListView.builder(
-      controller: _scrollController,
+    return ListView(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        final song = songsById[item.musicaId];
-        final key = _momentKeys.putIfAbsent(item.id, GlobalKey.new);
+      children:
+          items.map((item) {
+            final song = songsById[item.musicaId];
+            final key = _momentKeys.putIfAbsent(item.id, GlobalKey.new);
 
-        return Card(
-          key: key,
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${item.ordem + 1}. '
-                  '${MomentoLiturgico.fromString(item.momentoLiturgico).label}',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const Divider(height: 24),
-                if (song == null)
-                  Text(
-                    item.musicaId == null
-                        ? 'Nenhuma música selecionada para este momento.'
-                        : 'A música selecionada não está disponível offline.',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  )
-                else
-                  CifraView(
-                    song: song.conteudoJson,
-                    lyricFontSize: _fontSize,
-                    chordFontSize: _fontSize * 0.78,
-                    showChords: _showChords,
-                  ),
-                if (item.observacao?.isNotEmpty == true) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    item.observacao!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
+            return Card(
+              key: key,
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${item.ordem + 1}. '
+                      '${MomentoLiturgico.fromString(item.momentoLiturgico).label}',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
+                    const Divider(height: 24),
+                    if (song == null)
+                      Text(
+                        item.musicaId == null
+                            ? 'Nenhuma música selecionada para este momento.'
+                            : 'A música selecionada não está disponível offline.',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      )
+                    else
+                      CifraView(
+                        song: song.conteudoJson,
+                        lyricFontSize: _fontSize,
+                        chordFontSize: _fontSize * 0.78,
+                        showChords: _showChords,
+                      ),
+                    if (item.observacao?.isNotEmpty == true) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        item.observacao!,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
     );
   }
 }

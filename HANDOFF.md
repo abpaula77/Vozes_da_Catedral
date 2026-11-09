@@ -28,8 +28,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 5 | Grupos, RLS, gestão de membros | ✅ Correção via RPC aplicada no Supabase; smoke test pendente | #14 | — |
 | 6 | Catálogo compartilhado e sync de músicas | ✅ Catálogo/cópias aplicado no Supabase; teste entre grupos pendente | #15 | — |
 | 7 | Montador de Celebração (Rito Romano) | ✅ Implementado e aberto no aparelho; validação funcional Supabase/offline pendente | #16 | — |
-| 8 | Modo Performance (wakelock, dark mode, rolagem) | 🚧 Em implementação | #17 | — |
-| 9 | APK release + deploy web Vercel | ⏳ Todo | #18 | — |
+| 8 | Modo Performance (wakelock, dark mode, rolagem) | ✅ Implementado e testado no aparelho | #17 | — |
+| 9 | APK release + deploy web Vercel | 🚧 Em implementação | #18 | — |
 
 ---
 
@@ -259,15 +259,19 @@ O `defaultRitoRomano(celebracaoId)` factory já cria a estrutura vazia.
 **Implementação iniciada:**
 - Rota de performance adicionada ao detalhe da celebração
 - Leitura contínua offline de itens e músicas locais, com cifras/letras, observações e navegação rápida por momento
-- Controles de fonte, cifras e tema; wakelock ativado enquanto a tela está em primeiro plano
+- Barra inferior de controles para fonte, cifras e tema; usuário confirmou claro/escuro funcionando
+- Navegação rápida funciona também para momentos ainda fora da área visível da rolagem
+- Wakelock ativado enquanto a tela está em primeiro plano
 - `flutter test` e análise Dart dos arquivos alterados passaram; `flutter build apk --debug` concluiu
-- APK debug instalado e app aberto no Samsung SM-A546E (`RQCW701905N`); ainda falta navegar e validar manualmente a nova tela Performance no aparelho
+- APK debug instalado e app aberto no Samsung SM-A546E (`RQCW701905N`); usuário confirmou teste funcional concluído com sucesso
 
 ### Melhorias futuras do montador (issue #19)
 - Classificar/filtrar o catálogo por momento litúrgico, além das categorias livres atuais
 - Avaliar aviso ou política configurável para reutilização da mesma música em vários momentos
 
 ### Task 9 — Build e Deploy (issue #18)
+**Iniciada após a conclusão validada da Task 8.**
+
 ```bash
 # APK release (sideload Android)
 flutter build apk --release
