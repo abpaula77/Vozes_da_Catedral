@@ -1,14 +1,21 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/user_model.dart';
 
 /// Supabase client singleton
-final supabaseProvider = Provider<SupabaseClient>((ref) => Supabase.instance.client);
+final supabaseProvider = Provider<SupabaseClient>(
+  (ref) => Supabase.instance.client,
+);
 
 /// Current Supabase Auth session — null when logged out
 final authSessionProvider = StreamProvider<Session?>((ref) {
-  return ref.watch(supabaseProvider).auth.onAuthStateChange.map((e) => e.session);
+  return ref
+      .watch(supabaseProvider)
+      .auth
+      .onAuthStateChange
+      .map((e) => e.session);
 });
 
 /// Whether the user is currently authenticated
@@ -28,11 +35,8 @@ final currentUserProvider = FutureProvider<UserModel?>((ref) async {
   if (userId == null) return null;
 
   final supabase = ref.watch(supabaseProvider);
-  final data = await supabase
-      .from('users')
-      .select()
-      .eq('id', userId)
-      .maybeSingle();
+  final data =
+      await supabase.from('users').select().eq('id', userId).maybeSingle();
 
   if (data == null) return null;
   return UserModel.fromJson(data);
@@ -57,6 +61,10 @@ class AuthService {
     final response = await _client.auth.signUp(
       email: email,
       password: password,
+      emailRedirectTo:
+          kIsWeb
+              ? Uri.base.origin
+              : 'io.supabase.vozesdacatedral://login-callback',
       data: {'nome': nome},
     );
     return response.session == null;
