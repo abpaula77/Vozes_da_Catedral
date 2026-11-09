@@ -49,16 +49,17 @@ class AuthService {
   }
 
   /// Sign up with email and password
-  Future<void> signUpWithEmail(String email, String password, String nome) async {
+  Future<bool> signUpWithEmail(
+    String email,
+    String password,
+    String nome,
+  ) async {
     final response = await _client.auth.signUp(
       email: email,
       password: password,
       data: {'nome': nome},
     );
-    if (response.user != null) {
-      // Create user profile in public.users table
-      await _createUserProfile(response.user!, nome);
-    }
+    return response.session == null;
   }
 
   /// Sign in with Google OAuth
@@ -88,16 +89,6 @@ class AuthService {
       'email': email,
       'foto': foto,
       'papel': papel,
-    });
-  }
-
-  Future<void> _createUserProfile(User user, String nome) async {
-    await _client.from('users').upsert({
-      'id': user.id,
-      'nome': nome,
-      'email': user.email ?? '',
-      'foto': user.userMetadata?['avatar_url'],
-      'papel': 'membro',
     });
   }
 }

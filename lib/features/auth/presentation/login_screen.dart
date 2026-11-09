@@ -18,6 +18,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isSignUp = false;
   final _nomeController = TextEditingController();
   String? _errorMessage;
+  String? _infoMessage;
 
   @override
   void dispose() {
@@ -32,16 +33,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _infoMessage = null;
     });
 
     try {
       final authService = ref.read(authServiceProvider);
       if (_isSignUp) {
-        await authService.signUpWithEmail(
+        final emailConfirmationRequired = await authService.signUpWithEmail(
           _emailController.text.trim(),
           _passwordController.text,
           _nomeController.text.trim(),
         );
+        if (emailConfirmationRequired && mounted) {
+          setState(() {
+            _isSignUp = false;
+            _infoMessage =
+                'Conta criada. Verifique seu e-mail para confirmar o cadastro e depois entre.';
+          });
+        }
       } else {
         await authService.signInWithEmail(
           _emailController.text.trim(),
@@ -49,9 +58,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = _friendlyError(e.toString());
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = _friendlyError(e.toString());
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -67,7 +78,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (error.contains('Email not confirmed')) {
       return 'Confirme seu e-mail antes de entrar.';
     }
-    return 'Erro ao entrar. Tente novamente.';
+    return _isSignUp
+        ? 'Não foi possível criar a conta. Verifique os dados e tente novamente.'
+        : 'Não foi possível entrar. Verifique os dados e tente novamente.';
   }
 
   @override
@@ -133,7 +146,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       autocorrect: false,
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Informe o e-mail';
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Informe o e-mail';
+                        }
                         if (!v.contains('@')) return 'E-mail inválido';
                         return null;
                       },
@@ -151,7 +166,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       obscureText: true,
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Informe a senha';
-                        if (_isSignUp && v.length < 6) return 'Mínimo 6 caracteres';
+                        if (_isSignUp && v.length < 6) {
+                          return 'Mínimo 6 caracteres';
+                        }
                         return null;
                       },
                     ),
@@ -164,6 +181,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Text(
                           _errorMessage!,
                           style: TextStyle(color: theme.colorScheme.error),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    if (_infoMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          _infoMessage!,
+                          style: TextStyle(color: theme.colorScheme.primary),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -189,6 +215,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onPressed: () => setState(() {
                         _isSignUp = !_isSignUp;
                         _errorMessage = null;
+                        _infoMessage = null;
                       }),
                       child: Text(
                         _isSignUp
