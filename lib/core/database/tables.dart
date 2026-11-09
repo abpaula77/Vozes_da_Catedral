@@ -37,6 +37,8 @@ class MusicasLocal extends Table {
   IntColumn get bpm => integer().nullable()();
   TextColumn get categorias =>
       text().withDefault(const Constant('[]'))(); // JSON array string
+  TextColumn get momentosLiturgicos =>
+      text().withDefault(const Constant('[]'))(); // JSON array string
   TextColumn get conteudoRaw => text()();
   TextColumn get conteudoJson => text()();
   DateTimeColumn get updatedAt => dateTime()();

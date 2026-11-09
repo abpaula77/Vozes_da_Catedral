@@ -268,11 +268,77 @@ class _CelebrationDetailScreenState
       return;
     }
     final songs = songsState.requireValue;
+    final itemsState = ref.read(itensByCelebracaoProvider(widget.celebracaoId));
+    if (itemsState.hasError) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erro ao verificar músicas já utilizadas: ${itemsState.error}',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    if (!itemsState.hasValue) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Carregando os momentos da celebração. Tente novamente.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    final celebrationItems = itemsState.requireValue;
+    final moment = MomentoLiturgico.fromString(item.momentoLiturgico);
     final selectedId = await showDialog<String?>(
       context: context,
-      builder: (context) => _SongPickerDialog(songs: songs),
+      builder:
+          (context) => _SongPickerDialog(songs: songs, selectedMoment: moment),
     );
     if (selectedId == null || !mounted) return;
+    final repeatedMoments =
+        celebrationItems
+            .where(
+              (other) =>
+                  other.id != item.id &&
+                  other.musicaId == selectedId &&
+                  selectedId.isNotEmpty,
+            )
+            .map(
+              (other) =>
+                  MomentoLiturgico.fromString(other.momentoLiturgico).label,
+            )
+            .toList();
+    if (repeatedMoments.isNotEmpty) {
+      final useAgain = await showDialog<bool>(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Música já utilizada'),
+              content: Text(
+                'Esta música já está selecionada em '
+                '${repeatedMoments.join(', ')}. Deseja reutilizá-la também '
+                'em ${moment.label}?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Usar mesmo assim'),
+                ),
+              ],
+            ),
+      );
+      if (useAgain != true || !mounted) return;
+    }
     try {
       await ref
           .read(celebracoesServiceProvider)
@@ -516,42 +582,109 @@ class _CelebrationMomentCard extends StatelessWidget {
   }
 }
 
-class _SongPickerDialog extends StatelessWidget {
+class _SongPickerDialog extends StatefulWidget {
   final List<SongModel> songs;
+  final MomentoLiturgico selectedMoment;
 
-  const _SongPickerDialog({required this.songs});
+  const _SongPickerDialog({required this.songs, required this.selectedMoment});
+
+  @override
+  State<_SongPickerDialog> createState() => _SongPickerDialogState();
+}
+
+class _SongPickerDialogState extends State<_SongPickerDialog> {
+  MomentoLiturgico? _momentFilter;
+
+  @override
+  void initState() {
+    super.initState();
+    _momentFilter = widget.selectedMoment;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final songs =
+        widget.songs
+            .where(
+              (song) =>
+                  _momentFilter == null ||
+                  song.momentosLiturgicos.isEmpty ||
+                  song.momentosLiturgicos.contains(_momentFilter),
+            )
+            .toList()
+          ..sort((a, b) {
+            final aMatches = a.momentosLiturgicos.contains(_momentFilter);
+            final bMatches = b.momentosLiturgicos.contains(_momentFilter);
+            return (aMatches == bMatches) ? 0 : (aMatches ? -1 : 1);
+          });
     return AlertDialog(
       title: const Text('Selecionar música'),
       content: SizedBox(
         width: double.maxFinite,
-        child: ListView(
-          shrinkWrap: true,
+        height: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.remove_circle_outline),
-              title: const Text('Remover música'),
-              onTap: () => Navigator.pop(context, ''),
+            SizedBox(
+              height: 48,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Todas'),
+                    selected: _momentFilter == null,
+                    onSelected: (_) => setState(() => _momentFilter = null),
+                  ),
+                  const SizedBox(width: 8),
+                  for (final moment in MomentoLiturgico.values)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(moment.label),
+                        selected: _momentFilter == moment,
+                        onSelected:
+                            (_) => setState(() => _momentFilter = moment),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            if (songs.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Nenhuma música disponível no hinário deste grupo.',
-                ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.remove_circle_outline),
+                    title: const Text('Remover música'),
+                    onTap: () => Navigator.pop(context, ''),
+                  ),
+                  if (widget.songs.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Nenhuma música disponível no hinário deste grupo.',
+                      ),
+                    )
+                  else if (songs.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Nenhuma música classificada para este momento.',
+                      ),
+                    ),
+                  for (final song in songs)
+                    ListTile(
+                      leading: const Icon(Icons.music_note),
+                      title: Text(song.titulo),
+                      subtitle:
+                          song.tomOriginal == null
+                              ? null
+                              : Text('Tom: ${song.tomOriginal}'),
+                      onTap: () => Navigator.pop(context, song.id),
+                    ),
+                ],
               ),
-            for (final song in songs)
-              ListTile(
-                leading: const Icon(Icons.music_note),
-                title: Text(song.titulo),
-                subtitle:
-                    song.tomOriginal == null
-                        ? null
-                        : Text('Tom: ${song.tomOriginal}'),
-                onTap: () => Navigator.pop(context, song.id),
-              ),
+            ),
           ],
         ),
       ),

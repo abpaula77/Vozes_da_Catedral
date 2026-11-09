@@ -8,6 +8,7 @@ O hinário importa arquivos de texto simples em UTF-8 com extensão `.txt`. O fo
 [TITULO]: Nome da música
 [TOM]: D
 [CATEGORIA]: entrada, advento
+[MOMENTO]: entrada, comunhao
 [BPM]: 92
 
 [ESTROFE 1]
@@ -39,9 +40,15 @@ Os campos devem ficar no início do arquivo, antes da primeira seção:
 | `[TOM]` | Não | Tom original, por exemplo `D`, `F#m` ou `Bb`. |
 | `[CATEGORIA]` | Não | Categoria ou lista separada por vírgulas. |
 | `[CATEGORIAS]` | Não | Forma alternativa para informar categorias separadas por vírgulas. |
+| `[MOMENTO]` | Não | Um ou mais momentos litúrgicos separados por vírgulas. Use os identificadores listados abaixo. |
+| `[MOMENTOS]` | Não | Forma alternativa de `[MOMENTO]`. |
 | `[BPM]` | Não | Andamento em número inteiro, por exemplo `92`. |
 
 Categorias também podem ser informadas em mais de uma linha `[CATEGORIA]`. O app as normaliza para minúsculas.
+
+Uma música pode ser classificada para mais de um momento. Os identificadores válidos são: `entrada`, `atoPenitencial`, `gloria`, `salmoResponsorial`, `aclamacaoEvangelho`, `oferta`, `santo`, `cordeiroDeDeus`, `comunhao`, `posComunhao`, `consagracao`, `final_` e `outros`. O hinário e o seletor de músicas permitem filtrar por esses momentos. Coordenadores também podem alterar a classificação no hinário.
+
+No montador, músicas sem classificação continuam disponíveis para qualquer momento. Ao selecionar a mesma música em mais de um momento, o app avisa, mas permite continuar.
 
 O parser atualmente só usa esses campos. Informações como autor, compositor ou fonte não são armazenadas pelo cabeçalho.
 
@@ -91,4 +98,3 @@ Hosana nas alturas!
 3. Escreva cada marcador de seção em uma linha separada, como `[ESTROFE]`.
 4. Mantenha cada linha de cifra imediatamente antes da respectiva linha de letra.
 5. Evite anotações ou cifras com parênteses; a detecção atual aceita uma notação simples de acordes.
-

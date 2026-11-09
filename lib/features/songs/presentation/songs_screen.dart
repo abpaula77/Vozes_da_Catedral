@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/domain/momento_liturgico.dart';
 import '../../../core/router/app_router.dart';
 import '../data/songs_provider.dart';
 import '../domain/song_model.dart';
 import '../domain/song_parser.dart';
+
+final _songMomentFilterProvider =
+    StateProvider.family<MomentoLiturgico?, String>((ref, grupoId) => null);
 
 class SongsScreen extends ConsumerWidget {
   final String grupoId;
@@ -21,6 +25,7 @@ class SongsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final musicasAsync = ref.watch(musicasByGrupoProvider(grupoId));
     final syncAtAsync = ref.watch(musicasSyncAtProvider(grupoId));
+    final selectedMoment = ref.watch(_songMomentFilterProvider(grupoId));
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -54,11 +59,55 @@ class SongsScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
+          SizedBox(
+            height: 56,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              children: [
+                FilterChip(
+                  label: const Text('Todos'),
+                  selected: selectedMoment == null,
+                  onSelected:
+                      (_) =>
+                          ref
+                              .read(_songMomentFilterProvider(grupoId).notifier)
+                              .state = null,
+                ),
+                const SizedBox(width: 8),
+                for (final moment in MomentoLiturgico.values)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(moment.label),
+                      selected: selectedMoment == moment,
+                      onSelected:
+                          (_) =>
+                              ref
+                                  .read(
+                                    _songMomentFilterProvider(grupoId).notifier,
+                                  )
+                                  .state = moment,
+                    ),
+                  ),
+              ],
+            ),
+          ),
           Expanded(
             child: musicasAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Erro: $e')),
               data: (musicas) {
+                final filteredMusicas =
+                    selectedMoment == null
+                        ? musicas
+                        : musicas
+                            .where(
+                              (song) => song.momentosLiturgicos.contains(
+                                selectedMoment,
+                              ),
+                            )
+                            .toList();
                 if (musicas.isEmpty) {
                   return Center(
                     child: Column(
@@ -91,16 +140,46 @@ class SongsScreen extends ConsumerWidget {
                     ),
                   );
                 }
+                if (filteredMusicas.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Nenhuma música classificada para '
+                          '${selectedMoment!.label}.',
+                          textAlign: TextAlign.center,
+                        ),
+                        TextButton(
+                          onPressed:
+                              () =>
+                                  ref
+                                      .read(
+                                        _songMomentFilterProvider(
+                                          grupoId,
+                                        ).notifier,
+                                      )
+                                      .state = null,
+                          child: const Text('Mostrar todas'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
-                  itemCount: musicas.length,
+                  itemCount: filteredMusicas.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
-                    final musica = musicas[index];
+                    final musica = filteredMusicas[index];
                     return _MusicaCard(
                       musica: musica,
                       isCoordenador: isCoordenador,
+                      onClassify:
+                          isCoordenador
+                              ? () => _editMoments(context, ref, musica)
+                              : null,
                       onDelete:
                           isCoordenador
                               ? () => _deleteMusica(context, ref, musica)
@@ -127,6 +206,34 @@ class SongsScreen extends ConsumerWidget {
               )
               : null,
     );
+  }
+
+  Future<void> _editMoments(
+    BuildContext context,
+    WidgetRef ref,
+    SongModel song,
+  ) async {
+    final moments = await showDialog<List<MomentoLiturgico>>(
+      context: context,
+      builder: (_) => _SongMomentsDialog(selected: song.momentosLiturgicos),
+    );
+    if (moments == null || !context.mounted) return;
+    try {
+      await ref
+          .read(songsServiceProvider)
+          .updateMomentosLiturgicos(song.id, moments);
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Classificação salva.')));
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao classificar música: $error')),
+        );
+      }
+    }
   }
 
   Future<void> _importFile(BuildContext context, WidgetRef ref) async {
@@ -275,6 +382,68 @@ class SongsScreen extends ConsumerWidget {
   }
 }
 
+class _SongMomentsDialog extends StatefulWidget {
+  final List<MomentoLiturgico> selected;
+
+  const _SongMomentsDialog({required this.selected});
+
+  @override
+  State<_SongMomentsDialog> createState() => _SongMomentsDialogState();
+}
+
+class _SongMomentsDialogState extends State<_SongMomentsDialog> {
+  late final Set<MomentoLiturgico> _selected = {...widget.selected};
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Momentos litúrgicos'),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 420,
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final moment in MomentoLiturgico.values)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(moment.label),
+                value: _selected.contains(moment),
+                onChanged: (selected) {
+                  setState(() {
+                    if (selected == true) {
+                      _selected.add(moment);
+                    } else {
+                      _selected.remove(moment);
+                    }
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        TextButton(
+          onPressed: () => setState(_selected.clear),
+          child: const Text('Limpar'),
+        ),
+        FilledButton(
+          onPressed:
+              () => Navigator.pop(
+                context,
+                MomentoLiturgico.values.where(_selected.contains).toList(),
+              ),
+          child: const Text('Salvar'),
+        ),
+      ],
+    );
+  }
+}
+
 class _CatalogSongDialog extends StatefulWidget {
   final List<SongModel> songs;
 
@@ -418,6 +587,7 @@ class _SyncStatus extends StatelessWidget {
 class _MusicaCard extends StatelessWidget {
   final SongModel musica;
   final bool isCoordenador;
+  final VoidCallback? onClassify;
   final VoidCallback? onDelete;
   final VoidCallback onTap;
 
@@ -425,6 +595,7 @@ class _MusicaCard extends StatelessWidget {
     required this.musica,
     required this.isCoordenador,
     required this.onTap,
+    this.onClassify,
     this.onDelete,
   });
 
@@ -486,6 +657,19 @@ class _MusicaCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (musica.momentosLiturgicos.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children:
+                            musica.momentosLiturgicos
+                                .map(
+                                  (moment) => _CategoryBadge(cat: moment.label),
+                                )
+                                .toList(),
+                      ),
+                    ],
                     if (musica.categorias.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Wrap(
@@ -500,6 +684,13 @@ class _MusicaCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (onClassify != null)
+                IconButton(
+                  icon: const Icon(Icons.category_outlined),
+                  tooltip: 'Classificar momentos litúrgicos',
+                  onPressed: onClassify,
+                  iconSize: 20,
+                ),
               if (onDelete != null)
                 IconButton(
                   icon: Icon(

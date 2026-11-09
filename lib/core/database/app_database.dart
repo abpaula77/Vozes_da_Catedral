@@ -19,7 +19,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -31,6 +31,9 @@ class AppDatabase extends _$AppDatabase {
           itensCelebracaoLocal,
           itensCelebracaoLocal.isSynced,
         );
+      }
+      if (from < 4) {
+        await migrator.addColumn(musicasLocal, musicasLocal.momentosLiturgicos);
       }
     },
   );
@@ -78,6 +81,14 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> upsertMusica(MusicasLocalCompanion musica) =>
       into(musicasLocal).insertOnConflictUpdate(musica);
+
+  Future<void> updateMusicaMomentos(String id, String momentosLiturgicos) =>
+      (update(musicasLocal)..where((t) => t.id.equals(id))).write(
+        MusicasLocalCompanion(
+          momentosLiturgicos: Value(momentosLiturgicos),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
 
   Future<void> deleteMusica(String id) =>
       (delete(musicasLocal)..where((t) => t.id.equals(id))).go();

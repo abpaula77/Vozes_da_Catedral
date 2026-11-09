@@ -1,31 +1,9 @@
+import '../../../core/domain/momento_liturgico.dart';
+
+export '../../../core/domain/momento_liturgico.dart';
+
 /// Liturgical moments of the Roman Rite (Rito Romano).
 /// Order follows the standard Mass structure.
-enum MomentoLiturgico {
-  entrada('Entrada'),
-  atoPenitencial('Ato Penitencial'),
-  gloria('Glória'),
-  salmoResponsorial('Salmo Responsorial'),
-  aclamacaoEvangelho('Aclamação ao Evangelho'),
-  oferta('Oferta / Ofertório'),
-  santo('Santo'),
-  cordeiroDeDeus('Cordeiro de Deus'),
-  comunhao('Comunhão'),
-  posComunhao('Pós-Comunhão / Meditação'),
-  consagracao('Consagração / Canto Mariano'),
-  final_('Final / Envio'),
-  outros('Outros');
-
-  final String label;
-  const MomentoLiturgico(this.label);
-
-  static MomentoLiturgico fromString(String value) {
-    return MomentoLiturgico.values.firstWhere(
-      (e) => e.name == value,
-      orElse: () => MomentoLiturgico.outros,
-    );
-  }
-}
-
 /// Domain model for a celebration (missa).
 class CelebracaoModel {
   final String id;

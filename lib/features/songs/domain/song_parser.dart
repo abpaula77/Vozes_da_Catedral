@@ -1,4 +1,5 @@
 import 'song_model.dart';
+import '../../../core/domain/momento_liturgico.dart';
 
 /// Parser for the custom plain-text chord+lyric format used by Vozes da Catedral.
 ///
@@ -51,6 +52,7 @@ class SongParser {
     String? tom;
     int? bpm;
     final categorias = <String>[];
+    final momentosLiturgicos = <MomentoLiturgico>[];
     final secoes = <SongSection>[];
 
     String? currentSectionType;
@@ -65,7 +67,12 @@ class SongParser {
           pendingChordLine = null;
         }
         if (currentLines.isNotEmpty) {
-          secoes.add(SongSection(tipo: currentSectionType!, linhas: List.from(currentLines)));
+          secoes.add(
+            SongSection(
+              tipo: currentSectionType!,
+              linhas: List.from(currentLines),
+            ),
+          );
         }
         currentLines.clear();
         currentSectionType = null;
@@ -73,7 +80,8 @@ class SongParser {
     }
 
     for (final rawLine in lines) {
-      final line = rawLine.trimRight(); // preserve leading spaces for chord alignment
+      final line =
+          rawLine.trimRight(); // preserve leading spaces for chord alignment
 
       // ── Header tags: [TITULO], [TOM], [CATEGORIA], [BPM] ──────────────────
       final headerMatch = RegExp(r'^\[(\w+)\]:\s*(.+)$').firstMatch(line);
@@ -94,7 +102,24 @@ class SongParser {
           case 'CATEGORIA':
           case 'CATEGORIAS':
             // Support comma-separated categories
-            categorias.addAll(value.split(',').map((c) => c.trim().toLowerCase()));
+            categorias.addAll(
+              value.split(',').map((c) => c.trim().toLowerCase()),
+            );
+            break;
+          case 'MOMENTO':
+          case 'MOMENTOS':
+            for (final tag in value.split(',')) {
+              final moment = MomentoLiturgico.fromTag(tag);
+              if (moment == null) {
+                throw SongParseException(
+                  'Momento litúrgico inválido: "$tag". Use um momento '
+                  'reconhecido pelo Rito Romano.',
+                );
+              }
+              if (!momentosLiturgicos.contains(moment)) {
+                momentosLiturgicos.add(moment);
+              }
+            }
             break;
         }
         continue;
@@ -104,7 +129,9 @@ class SongParser {
       final sectionMatch = RegExp(r'^\[([^\]]+)\]$').firstMatch(line);
       if (sectionMatch != null) {
         final tag = sectionMatch.group(1)!.trim().toUpperCase();
-        if (_sectionTags.contains(tag) || tag.startsWith('ESTROFE') || tag.startsWith('VERSO')) {
+        if (_sectionTags.contains(tag) ||
+            tag.startsWith('ESTROFE') ||
+            tag.startsWith('VERSO')) {
           _flushSection();
           currentSectionType = tag;
           continue;
@@ -139,7 +166,9 @@ class SongParser {
     _flushSection();
 
     if (titulo == null || titulo.isEmpty) {
-      throw SongParseException('Campo [TITULO] não encontrado ou vazio no arquivo.');
+      throw SongParseException(
+        'Campo [TITULO] não encontrado ou vazio no arquivo.',
+      );
     }
 
     return SongContent(
@@ -147,6 +176,7 @@ class SongParser {
       tomOriginal: tom,
       bpm: bpm,
       categorias: categorias,
+      momentosLiturgicos: momentosLiturgicos,
       secoes: secoes,
     );
   }

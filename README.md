@@ -19,6 +19,7 @@ O app permite que o **Coordenador** monte a estrutura completa de uma celebraç�
 - 🔐 **Autenticação** — Google OAuth e e-mail/senha via Supabase
 - 👥 **Grupos** — Coordenador gerencia membros; membros acessam no modo leitura
 - 🎵 **Hinário** — Importação de músicas via arquivo `.txt` com cifras e letras
+- ✝️ **Classificação litúrgica** — Associação de músicas a momentos do Rito Romano, com filtros no hinário e no montador
 - ✝️ **Montador de Celebração** — Estrutura do Rito Romano com slots para cada momento litúrgico
 - 🌙 **Modo Performance** — Dark mode, ajuste de fonte, toggle de cifras, rolagem contínua, tela sempre ativa
 - 📲 **Offline-first** — Músicas e celebrações sincronizadas ficam disponíveis sem internet durante a missa

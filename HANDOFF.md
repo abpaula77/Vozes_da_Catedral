@@ -13,7 +13,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit:** consulte `git log --oneline`
+**Último commit:** `60bc3d8` — fix: tratar cadastro com confirmacao de email
 
 ---
 
@@ -29,7 +29,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 6 | Catálogo compartilhado e sync de músicas | ✅ Concluída | #15 | 7b7bc29 |
 | 7 | Montador de Celebração (Rito Romano) | ✅ Concluída, com correção de sincronização | #16 | cb28a56 |
 | 8 | Modo Performance (wakelock, dark mode, rolagem) | ✅ Implementada e testada no aparelho | #17 | 5ed8db9 |
-| 9 | APK release + deploy web Vercel | 🚧 Builds validados; deploy depende de acesso à Vercel | #18 | — |
+| 9 | APK release + deploy web Vercel | ✅ Build e deploy validados pelo usuário | #18 | 145af1e |
+| 10 | Classificação de músicas por momento litúrgico e reutilização | 🚧 Em implementação; migration Supabase a aplicar e testar | #19 | — |
 
 ---
 
@@ -279,14 +280,20 @@ flutter build apk --release
 
 # Web
 flutter build web --release
-# Deploy: vercel --prod (instalar com npm i -g vercel)
+# Deploy somente o build, evitando enviar o repositório inteiro
+vercel deploy .\build\web --prod
 ```
 - Ícone, splash, nome do app e manifestos Android/Web foram personalizados com a identidade provisória do projeto
 - O release usa `android/key.properties` quando configurado; sem chave usa assinatura debug, apenas para testes
 - `vercel.json` publica `build/web` e redireciona rotas do app para a entrada Flutter
 - `flutter build apk --release` e `flutter build web --release` validados; APK instalado e aberto no Samsung SM-A546E
 - Drift Web configurado com `DriftWebOptions` e runtime WASM compatível com as versões do `pubspec.lock`; login e lista de grupos validados no navegador local
-- Publicação Vercel ainda requer CLI instalado, login e projeto configurado; não considerar deploy concluído antes de validar uma URL publicada
+- O usuário confirmou o deploy e o webapp funcionando em 09/11/2026
+
+### Task 10 — Classificação litúrgica e reutilização (issue #19)
+- Iniciada após a conclusão validada da Task 9
+- Implementação em andamento: classificação múltipla por momento, filtros no hinário e seletor da celebração, aviso confirmável ao reutilizar música
+- Migration Supabase: `supabase/migrations/20261109_song_liturgical_moments.sql`; precisa ser aplicada antes de testar publicação/sync dos novos campos
 
 ---
 

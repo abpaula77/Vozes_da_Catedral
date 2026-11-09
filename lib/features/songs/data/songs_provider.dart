@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/domain/momento_liturgico.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../domain/song_id.dart';
 import '../domain/song_model.dart';
@@ -34,6 +35,7 @@ final musicasByGrupoProvider = StreamProvider.family<List<SongModel>, String>((
                     categorias: List<String>.from(
                       jsonDecode(r.categorias) as List,
                     ),
+                    momentosLiturgicos: _decodeMomentos(r.momentosLiturgicos),
                     conteudoRaw: r.conteudoRaw,
                     conteudoJson: SongContent.fromJson(
                       jsonDecode(r.conteudoJson) as Map<String, dynamic>,
@@ -92,6 +94,9 @@ class SongsService {
         tomOriginal: drift.Value(content.tomOriginal),
         bpm: drift.Value(content.bpm),
         categorias: drift.Value(jsonEncode(content.categorias)),
+        momentosLiturgicos: drift.Value(
+          jsonEncode(content.momentosLiturgicos.map((moment) => moment.name)),
+        ),
         conteudoRaw: raw,
         conteudoJson: jsonEncode(content.toJson()),
         updatedAt: DateTime.now(),
@@ -103,6 +108,35 @@ class SongsService {
 
   /// Delete a song from local DB
   Future<void> deleteMusica(String id) => _db.deleteMusica(id);
+
+  Future<void> updateMomentosLiturgicos(
+    String musicaId,
+    List<MomentoLiturgico> momentos,
+  ) async {
+    final remote =
+        await _supabase
+                .from('musicas')
+                .select('id')
+                .eq('id', musicaId)
+                .maybeSingle()
+            as Map<String, dynamic>?;
+
+    if (remote != null) {
+      await _supabase
+          .from('musicas')
+          .update({
+            'momentos_liturgicos':
+                momentos.map((moment) => moment.name).toList(),
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', musicaId);
+    }
+
+    await _db.updateMusicaMomentos(
+      musicaId,
+      jsonEncode(momentos.map((moment) => moment.name).toList()),
+    );
+  }
 
   /// Publish all local songs of a group to Supabase (Coordenador only)
   Future<int> publishMusicas(String grupoId) async {
@@ -176,6 +210,10 @@ class SongsService {
       'tom_original': song.tomOriginal,
       'bpm': song.bpm,
       'categorias': jsonDecode(song.categorias),
+      'momentos_liturgicos':
+          _decodeMomentos(
+            song.momentosLiturgicos,
+          ).map((moment) => moment.name).toList(),
       'conteudo_raw': song.conteudoRaw,
       'conteudo_json': jsonDecode(song.conteudoJson),
       'criado_por': userId,
@@ -200,6 +238,9 @@ class SongsService {
             tomOriginal: drift.Value(m['tom_original'] as String?),
             bpm: drift.Value(m['bpm'] as int?),
             categorias: drift.Value(jsonEncode(m['categorias'] ?? [])),
+            momentosLiturgicos: drift.Value(
+              jsonEncode(m['momentos_liturgicos'] ?? []),
+            ),
             conteudoRaw: m['conteudo_raw'] as String,
             conteudoJson: jsonEncode(m['conteudo_json']),
             updatedAt:
@@ -245,3 +286,13 @@ class SongsService {
 }
 
 final songsServiceProvider = Provider<SongsService>((ref) => SongsService(ref));
+
+List<MomentoLiturgico> _decodeMomentos(String json) {
+  final values = jsonDecode(json);
+  if (values is! List) return const [];
+  return values
+      .whereType<String>()
+      .map(MomentoLiturgico.fromTag)
+      .whereType<MomentoLiturgico>()
+      .toList();
+}

@@ -832,6 +832,18 @@ class $MusicasLocalTable extends MusicasLocal
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
+  static const VerificationMeta _momentosLiturgicosMeta =
+      const VerificationMeta('momentosLiturgicos');
+  @override
+  late final GeneratedColumn<String> momentosLiturgicos =
+      GeneratedColumn<String>(
+        'momentos_liturgicos',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('[]'),
+      );
   static const VerificationMeta _conteudoRawMeta = const VerificationMeta(
     'conteudoRaw',
   );
@@ -873,6 +885,7 @@ class $MusicasLocalTable extends MusicasLocal
     tomOriginal,
     bpm,
     categorias,
+    momentosLiturgicos,
     conteudoRaw,
     conteudoJson,
     updatedAt,
@@ -929,6 +942,15 @@ class $MusicasLocalTable extends MusicasLocal
       context.handle(
         _categoriasMeta,
         categorias.isAcceptableOrUnknown(data['categorias']!, _categoriasMeta),
+      );
+    }
+    if (data.containsKey('momentos_liturgicos')) {
+      context.handle(
+        _momentosLiturgicosMeta,
+        momentosLiturgicos.isAcceptableOrUnknown(
+          data['momentos_liturgicos']!,
+          _momentosLiturgicosMeta,
+        ),
       );
     }
     if (data.containsKey('conteudo_raw')) {
@@ -998,6 +1020,11 @@ class $MusicasLocalTable extends MusicasLocal
             DriftSqlType.string,
             data['${effectivePrefix}categorias'],
           )!,
+      momentosLiturgicos:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}momentos_liturgicos'],
+          )!,
       conteudoRaw:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -1030,6 +1057,7 @@ class MusicasLocalData extends DataClass
   final String? tomOriginal;
   final int? bpm;
   final String categorias;
+  final String momentosLiturgicos;
   final String conteudoRaw;
   final String conteudoJson;
   final DateTime updatedAt;
@@ -1040,6 +1068,7 @@ class MusicasLocalData extends DataClass
     this.tomOriginal,
     this.bpm,
     required this.categorias,
+    required this.momentosLiturgicos,
     required this.conteudoRaw,
     required this.conteudoJson,
     required this.updatedAt,
@@ -1057,6 +1086,7 @@ class MusicasLocalData extends DataClass
       map['bpm'] = Variable<int>(bpm);
     }
     map['categorias'] = Variable<String>(categorias);
+    map['momentos_liturgicos'] = Variable<String>(momentosLiturgicos);
     map['conteudo_raw'] = Variable<String>(conteudoRaw);
     map['conteudo_json'] = Variable<String>(conteudoJson);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -1074,6 +1104,7 @@ class MusicasLocalData extends DataClass
               : Value(tomOriginal),
       bpm: bpm == null && nullToAbsent ? const Value.absent() : Value(bpm),
       categorias: Value(categorias),
+      momentosLiturgicos: Value(momentosLiturgicos),
       conteudoRaw: Value(conteudoRaw),
       conteudoJson: Value(conteudoJson),
       updatedAt: Value(updatedAt),
@@ -1092,6 +1123,9 @@ class MusicasLocalData extends DataClass
       tomOriginal: serializer.fromJson<String?>(json['tomOriginal']),
       bpm: serializer.fromJson<int?>(json['bpm']),
       categorias: serializer.fromJson<String>(json['categorias']),
+      momentosLiturgicos: serializer.fromJson<String>(
+        json['momentosLiturgicos'],
+      ),
       conteudoRaw: serializer.fromJson<String>(json['conteudoRaw']),
       conteudoJson: serializer.fromJson<String>(json['conteudoJson']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -1107,6 +1141,7 @@ class MusicasLocalData extends DataClass
       'tomOriginal': serializer.toJson<String?>(tomOriginal),
       'bpm': serializer.toJson<int?>(bpm),
       'categorias': serializer.toJson<String>(categorias),
+      'momentosLiturgicos': serializer.toJson<String>(momentosLiturgicos),
       'conteudoRaw': serializer.toJson<String>(conteudoRaw),
       'conteudoJson': serializer.toJson<String>(conteudoJson),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -1120,6 +1155,7 @@ class MusicasLocalData extends DataClass
     Value<String?> tomOriginal = const Value.absent(),
     Value<int?> bpm = const Value.absent(),
     String? categorias,
+    String? momentosLiturgicos,
     String? conteudoRaw,
     String? conteudoJson,
     DateTime? updatedAt,
@@ -1130,6 +1166,7 @@ class MusicasLocalData extends DataClass
     tomOriginal: tomOriginal.present ? tomOriginal.value : this.tomOriginal,
     bpm: bpm.present ? bpm.value : this.bpm,
     categorias: categorias ?? this.categorias,
+    momentosLiturgicos: momentosLiturgicos ?? this.momentosLiturgicos,
     conteudoRaw: conteudoRaw ?? this.conteudoRaw,
     conteudoJson: conteudoJson ?? this.conteudoJson,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -1144,6 +1181,10 @@ class MusicasLocalData extends DataClass
       bpm: data.bpm.present ? data.bpm.value : this.bpm,
       categorias:
           data.categorias.present ? data.categorias.value : this.categorias,
+      momentosLiturgicos:
+          data.momentosLiturgicos.present
+              ? data.momentosLiturgicos.value
+              : this.momentosLiturgicos,
       conteudoRaw:
           data.conteudoRaw.present ? data.conteudoRaw.value : this.conteudoRaw,
       conteudoJson:
@@ -1163,6 +1204,7 @@ class MusicasLocalData extends DataClass
           ..write('tomOriginal: $tomOriginal, ')
           ..write('bpm: $bpm, ')
           ..write('categorias: $categorias, ')
+          ..write('momentosLiturgicos: $momentosLiturgicos, ')
           ..write('conteudoRaw: $conteudoRaw, ')
           ..write('conteudoJson: $conteudoJson, ')
           ..write('updatedAt: $updatedAt')
@@ -1178,6 +1220,7 @@ class MusicasLocalData extends DataClass
     tomOriginal,
     bpm,
     categorias,
+    momentosLiturgicos,
     conteudoRaw,
     conteudoJson,
     updatedAt,
@@ -1192,6 +1235,7 @@ class MusicasLocalData extends DataClass
           other.tomOriginal == this.tomOriginal &&
           other.bpm == this.bpm &&
           other.categorias == this.categorias &&
+          other.momentosLiturgicos == this.momentosLiturgicos &&
           other.conteudoRaw == this.conteudoRaw &&
           other.conteudoJson == this.conteudoJson &&
           other.updatedAt == this.updatedAt);
@@ -1204,6 +1248,7 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
   final Value<String?> tomOriginal;
   final Value<int?> bpm;
   final Value<String> categorias;
+  final Value<String> momentosLiturgicos;
   final Value<String> conteudoRaw;
   final Value<String> conteudoJson;
   final Value<DateTime> updatedAt;
@@ -1215,6 +1260,7 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
     this.tomOriginal = const Value.absent(),
     this.bpm = const Value.absent(),
     this.categorias = const Value.absent(),
+    this.momentosLiturgicos = const Value.absent(),
     this.conteudoRaw = const Value.absent(),
     this.conteudoJson = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -1227,6 +1273,7 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
     this.tomOriginal = const Value.absent(),
     this.bpm = const Value.absent(),
     this.categorias = const Value.absent(),
+    this.momentosLiturgicos = const Value.absent(),
     required String conteudoRaw,
     required String conteudoJson,
     required DateTime updatedAt,
@@ -1244,6 +1291,7 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
     Expression<String>? tomOriginal,
     Expression<int>? bpm,
     Expression<String>? categorias,
+    Expression<String>? momentosLiturgicos,
     Expression<String>? conteudoRaw,
     Expression<String>? conteudoJson,
     Expression<DateTime>? updatedAt,
@@ -1256,6 +1304,7 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
       if (tomOriginal != null) 'tom_original': tomOriginal,
       if (bpm != null) 'bpm': bpm,
       if (categorias != null) 'categorias': categorias,
+      if (momentosLiturgicos != null) 'momentos_liturgicos': momentosLiturgicos,
       if (conteudoRaw != null) 'conteudo_raw': conteudoRaw,
       if (conteudoJson != null) 'conteudo_json': conteudoJson,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -1270,6 +1319,7 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
     Value<String?>? tomOriginal,
     Value<int?>? bpm,
     Value<String>? categorias,
+    Value<String>? momentosLiturgicos,
     Value<String>? conteudoRaw,
     Value<String>? conteudoJson,
     Value<DateTime>? updatedAt,
@@ -1282,6 +1332,7 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
       tomOriginal: tomOriginal ?? this.tomOriginal,
       bpm: bpm ?? this.bpm,
       categorias: categorias ?? this.categorias,
+      momentosLiturgicos: momentosLiturgicos ?? this.momentosLiturgicos,
       conteudoRaw: conteudoRaw ?? this.conteudoRaw,
       conteudoJson: conteudoJson ?? this.conteudoJson,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -1310,6 +1361,9 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
     if (categorias.present) {
       map['categorias'] = Variable<String>(categorias.value);
     }
+    if (momentosLiturgicos.present) {
+      map['momentos_liturgicos'] = Variable<String>(momentosLiturgicos.value);
+    }
     if (conteudoRaw.present) {
       map['conteudo_raw'] = Variable<String>(conteudoRaw.value);
     }
@@ -1334,6 +1388,7 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
           ..write('tomOriginal: $tomOriginal, ')
           ..write('bpm: $bpm, ')
           ..write('categorias: $categorias, ')
+          ..write('momentosLiturgicos: $momentosLiturgicos, ')
           ..write('conteudoRaw: $conteudoRaw, ')
           ..write('conteudoJson: $conteudoJson, ')
           ..write('updatedAt: $updatedAt, ')
@@ -3022,6 +3077,7 @@ typedef $$MusicasLocalTableCreateCompanionBuilder =
       Value<String?> tomOriginal,
       Value<int?> bpm,
       Value<String> categorias,
+      Value<String> momentosLiturgicos,
       required String conteudoRaw,
       required String conteudoJson,
       required DateTime updatedAt,
@@ -3035,6 +3091,7 @@ typedef $$MusicasLocalTableUpdateCompanionBuilder =
       Value<String?> tomOriginal,
       Value<int?> bpm,
       Value<String> categorias,
+      Value<String> momentosLiturgicos,
       Value<String> conteudoRaw,
       Value<String> conteudoJson,
       Value<DateTime> updatedAt,
@@ -3077,6 +3134,11 @@ class $$MusicasLocalTableFilterComposer
 
   ColumnFilters<String> get categorias => $composableBuilder(
     column: $table.categorias,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get momentosLiturgicos => $composableBuilder(
+    column: $table.momentosLiturgicos,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3135,6 +3197,11 @@ class $$MusicasLocalTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get momentosLiturgicos => $composableBuilder(
+    column: $table.momentosLiturgicos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get conteudoRaw => $composableBuilder(
     column: $table.conteudoRaw,
     builder: (column) => ColumnOrderings(column),
@@ -3179,6 +3246,11 @@ class $$MusicasLocalTableAnnotationComposer
 
   GeneratedColumn<String> get categorias => $composableBuilder(
     column: $table.categorias,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get momentosLiturgicos => $composableBuilder(
+    column: $table.momentosLiturgicos,
     builder: (column) => column,
   );
 
@@ -3234,6 +3306,7 @@ class $$MusicasLocalTableTableManager
                 Value<String?> tomOriginal = const Value.absent(),
                 Value<int?> bpm = const Value.absent(),
                 Value<String> categorias = const Value.absent(),
+                Value<String> momentosLiturgicos = const Value.absent(),
                 Value<String> conteudoRaw = const Value.absent(),
                 Value<String> conteudoJson = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -3245,6 +3318,7 @@ class $$MusicasLocalTableTableManager
                 tomOriginal: tomOriginal,
                 bpm: bpm,
                 categorias: categorias,
+                momentosLiturgicos: momentosLiturgicos,
                 conteudoRaw: conteudoRaw,
                 conteudoJson: conteudoJson,
                 updatedAt: updatedAt,
@@ -3258,6 +3332,7 @@ class $$MusicasLocalTableTableManager
                 Value<String?> tomOriginal = const Value.absent(),
                 Value<int?> bpm = const Value.absent(),
                 Value<String> categorias = const Value.absent(),
+                Value<String> momentosLiturgicos = const Value.absent(),
                 required String conteudoRaw,
                 required String conteudoJson,
                 required DateTime updatedAt,
@@ -3269,6 +3344,7 @@ class $$MusicasLocalTableTableManager
                 tomOriginal: tomOriginal,
                 bpm: bpm,
                 categorias: categorias,
+                momentosLiturgicos: momentosLiturgicos,
                 conteudoRaw: conteudoRaw,
                 conteudoJson: conteudoJson,
                 updatedAt: updatedAt,
