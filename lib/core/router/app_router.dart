@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/onboarding_screen.dart';
+import '../../features/celebrations/presentation/celebrations_screen.dart';
 import '../../features/groups/presentation/group_detail_screen.dart';
 import '../../features/groups/presentation/group_members_screen.dart';
 import '../../features/groups/presentation/groups_screen.dart';
@@ -21,11 +22,18 @@ class AppRoutes {
   static const groupDetail = '/groups/:grupoId';
   static const groupMembers = '/groups/:grupoId/members';
   static const songDetail = '/groups/:grupoId/songs/:musicaId';
+  static const celebrations = '/groups/:grupoId/celebrations';
+  static const celebrationDetail =
+      '/groups/:grupoId/celebrations/:celebracaoId';
 
   static String groupDetailPath(String grupoId) => '/groups/$grupoId';
   static String groupMembersPath(String grupoId) => '/groups/$grupoId/members';
   static String songDetailPath(String grupoId, String musicaId) =>
       '/groups/$grupoId/songs/$musicaId';
+  static String celebrationsPath(String grupoId) =>
+      '/groups/$grupoId/celebrations';
+  static String celebrationDetailPath(String grupoId, String celebracaoId) =>
+      '/groups/$grupoId/celebrations/$celebracaoId';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -87,6 +95,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     (context, state) => SongDetailScreen(
                       musicaId: state.pathParameters['musicaId']!,
                     ),
+              ),
+              GoRoute(
+                path: 'celebrations',
+                builder:
+                    (context, state) => CelebrationsScreen(
+                      grupoId: state.pathParameters['grupoId']!,
+                      isCoordenador: state.extra as bool? ?? false,
+                    ),
+                routes: [
+                  GoRoute(
+                    path: ':celebracaoId',
+                    builder:
+                        (context, state) => CelebrationDetailScreen(
+                          grupoId: state.pathParameters['grupoId']!,
+                          celebracaoId: state.pathParameters['celebracaoId']!,
+                          isCoordenador: state.extra as bool? ?? false,
+                        ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
 import '../../songs/presentation/songs_screen.dart';
@@ -102,33 +103,32 @@ class _CelebracoesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Will be implemented in Task 7
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.event_available_outlined,
-            size: 64,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Celebrações — Task 7',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Em desenvolvimento',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.5),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.event_available_outlined, size: 56),
+            const SizedBox(height: 16),
+            Text(
+              'Organize os cantos das celebrações do grupo.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed:
+                  () => context.push(
+                    AppRoutes.celebrationsPath(grupoId),
+                    extra: isCoordenador,
+                  ),
+              icon: const Icon(Icons.event),
+              label: const Text('Abrir celebrações'),
+            ),
+          ],
+        ),
       ),
     );
   }

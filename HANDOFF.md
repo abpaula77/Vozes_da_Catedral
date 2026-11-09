@@ -13,7 +13,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit:** `3d5e8fc` — feat: Tasks 2-4
+**Último commit:** `7b7bc29` — feat: compartilhar catalogo de musicas entre grupos
 
 ---
 
@@ -27,7 +27,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 4 | Hinário local + importação de .txt | ✅ Done | #13 | 3d5e8fc |
 | 5 | Grupos, RLS, gestão de membros | ✅ Correção via RPC aplicada no Supabase; smoke test pendente | #14 | — |
 | 6 | Catálogo compartilhado e sync de músicas | ✅ Catálogo/cópias aplicado no Supabase; teste entre grupos pendente | #15 | — |
-| 7 | Montador de Celebração (Rito Romano) | ⏳ Todo | #16 | — |
+| 7 | Montador de Celebração (Rito Romano) | ✅ Implementado e aberto no aparelho; validação funcional Supabase/offline pendente | #16 | — |
 | 8 | Modo Performance (wakelock, dark mode, rolagem) | ⏳ Todo | #17 | — |
 | 9 | APK release + deploy web Vercel | ⏳ Todo | #18 | — |
 
@@ -86,8 +86,8 @@ lib/
 ├── core/
 │   ├── config/supabase_config.dart       URL + anon key via dart-define
 │   ├── database/
-│   │   ├── tables.dart                   5 tabelas Drift
-│   │   ├── app_database.dart             queries + DAOs
+│   │   ├── tables.dart                   6 tabelas Drift
+│   │   ├── app_database.dart             queries + DAOs, schema v3
 │   │   ├── app_database.g.dart           gerado (build_runner)
 │   │   └── database_provider.dart        Provider<AppDatabase>
 │   ├── router/app_router.dart            GoRouter + redirect auth + nav helpers
@@ -104,7 +104,7 @@ lib/
     │   ├── data/groups_provider.dart      GruposService (createGrupo, syncGrupos, addMembro, removeMembro)
     │   └── presentation/
     │       ├── groups_screen.dart         lista grupos + FAB criar grupo
-    │       ├── group_detail_screen.dart   tabs: Hinário | Celebrações (placeholder)
+    │       ├── group_detail_screen.dart   tabs: Hinário | acesso às celebrações
     │       └── group_members_screen.dart  lista, convite e remoção de membros
     ├── songs/
     │   ├── domain/
@@ -116,8 +116,9 @@ lib/
     │       ├── songs_screen.dart          hinário com import .txt, delete, sync
     │       └── song_detail_screen.dart    visualizador CifraView + controles fonte/toggle
     ├── celebrations/
-    │   ├── data/celebrations_provider.dart syncCelebrações para cache offline
-    │   └── domain/celebration_model.dart  CelebracaoModel, MomentoLiturgico enum (12 momentos Rito Romano)
+    │   ├── data/celebrations_provider.dart CRUD local e sincronização Supabase
+    │   ├── domain/celebration_model.dart  CelebracaoModel, MomentoLiturgico (12 momentos)
+    │   └── presentation/celebrations_screen.dart lista, edição e montador
     └── splash/presentation/splash_screen.dart
 ```
 
@@ -130,6 +131,8 @@ lib/
 /groups/:grupoId    → GroupDetailScreen
 /groups/:grupoId/members → GroupMembersScreen
 /groups/:grupoId/songs/:musicaId → SongDetailScreen
+/groups/:grupoId/celebrations → CelebrationsScreen
+/groups/:grupoId/celebrations/:celebracaoId → CelebrationDetailScreen
 ```
 
 ### Fluxo de auth
@@ -227,13 +230,19 @@ O `SongsService` já existe em `lib/features/songs/data/songs_provider.dart` com
 O `MomentoLiturgico` enum já existe com os 12 momentos.
 O `defaultRitoRomano(celebracaoId)` factory já cria a estrutura vazia.
 
-**O que falta implementar:**
-- `CelebracoesService.createCelebracao`; reutilizar `syncCelebracoes` já implementado em `lib/features/celebrations/data/celebrations_provider.dart`
-- `CelebracaoScreen` — form com data/hora + título
-- `CelebracaoDetailScreen` — lista dos 12 momentos com slot de música por momento
-- Seletor de música: abre hinário local e vincula ao momento
-- Campo de observações por momento
-- Persistência: SQLite local + Supabase sync
+**Implementado nesta continuação:**
+- Lista de celebrações e formulário para título, data e horário; coordenadores podem criar e editar
+- Montador com os 12 momentos do Rito Romano, seleção de músicas do hinário local e observações por momento
+- Alterações são salvas primeiro no SQLite e mantêm flags de sincronização pendente para funcionar offline
+- Sincronização envia celebrações/itens pendentes e baixa os dados remotos; ações de escrita respeitam as políticas RLS existentes
+- IDs de celebrações e itens gerados como UUID; migração Drift v2→v3 adiciona estado de sincronização sem apagar os dados existentes
+- Reconciliação remove do cache as celebrações apagadas remotamente
+
+**Validação pendente:**
+- `flutter test` passou; `dart analyze` nos arquivos alterados não encontrou problemas
+- `flutter build apk --debug` passou; APK instalado e app aberto no Samsung SM-A546E (`RQCW701905N`) em 09/11/2026
+- A conexão do Flutter com o protocolo de depuração caiu depois da abertura; instalação e processo/tela ativa foram confirmados via ADB
+- Testar no Supabase as operações de coordenador/membro e a sincronização com rede indisponível e posterior restauração; não foi necessária migration Supabase nesta task
 
 ### Task 8 — Modo Performance (issue #17)
 **O que implementar:**

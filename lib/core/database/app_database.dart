@@ -19,12 +19,19 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
       if (from < 2) await migrator.createTable(syncStatusLocal);
+      if (from < 3) {
+        await migrator.addColumn(celebracoesLocal, celebracoesLocal.isSynced);
+        await migrator.addColumn(
+          itensCelebracaoLocal,
+          itensCelebracaoLocal.isSynced,
+        );
+      }
     },
   );
 
@@ -103,12 +110,20 @@ class AppDatabase extends _$AppDatabase {
             ..orderBy([(t) => OrderingTerm.desc(t.dataHora)]))
           .watch();
 
+  Future<List<CelebracoesLocalData>> getCelebracoesByGrupo(String grupoId) =>
+      (select(celebracoesLocal)..where((t) => t.grupoId.equals(grupoId))).get();
+
   Future<CelebracoesLocalData?> getCelebracao(String id) =>
       (select(celebracoesLocal)
         ..where((t) => t.id.equals(id))).getSingleOrNull();
 
   Future<void> upsertCelebracao(CelebracoesLocalCompanion celebracao) =>
       into(celebracoesLocal).insertOnConflictUpdate(celebracao);
+
+  Future<void> markCelebracaoSynced(String id) => (update(celebracoesLocal)
+    ..where(
+      (t) => t.id.equals(id),
+    )).write(const CelebracoesLocalCompanion(isSynced: Value(true)));
 
   Future<void> deleteCelebracao(String id) =>
       (delete(celebracoesLocal)..where((t) => t.id.equals(id))).go();
@@ -133,6 +148,11 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> upsertItemCelebracao(ItensCelebracaoLocalCompanion item) =>
       into(itensCelebracaoLocal).insertOnConflictUpdate(item);
+
+  Future<void> markItemCelebracaoSynced(String id) =>
+      (update(itensCelebracaoLocal)..where(
+        (t) => t.id.equals(id),
+      )).write(const ItensCelebracaoLocalCompanion(isSynced: Value(true)));
 
   Future<void> deleteItensByCelebracao(String celebracaoId) =>
       (delete(itensCelebracaoLocal)

@@ -1657,6 +1657,21 @@ class $CelebracoesLocalTable extends CelebracoesLocal
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1665,6 +1680,7 @@ class $CelebracoesLocalTable extends CelebracoesLocal
     dataHora,
     criadoPor,
     updatedAt,
+    isSynced,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1723,6 +1739,12 @@ class $CelebracoesLocalTable extends CelebracoesLocal
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
     return context;
   }
 
@@ -1762,6 +1784,11 @@ class $CelebracoesLocalTable extends CelebracoesLocal
             DriftSqlType.dateTime,
             data['${effectivePrefix}updated_at'],
           )!,
+      isSynced:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_synced'],
+          )!,
     );
   }
 
@@ -1779,6 +1806,7 @@ class CelebracoesLocalData extends DataClass
   final DateTime dataHora;
   final String criadoPor;
   final DateTime updatedAt;
+  final bool isSynced;
   const CelebracoesLocalData({
     required this.id,
     required this.grupoId,
@@ -1786,6 +1814,7 @@ class CelebracoesLocalData extends DataClass
     required this.dataHora,
     required this.criadoPor,
     required this.updatedAt,
+    required this.isSynced,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1796,6 +1825,7 @@ class CelebracoesLocalData extends DataClass
     map['data_hora'] = Variable<DateTime>(dataHora);
     map['criado_por'] = Variable<String>(criadoPor);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['is_synced'] = Variable<bool>(isSynced);
     return map;
   }
 
@@ -1807,6 +1837,7 @@ class CelebracoesLocalData extends DataClass
       dataHora: Value(dataHora),
       criadoPor: Value(criadoPor),
       updatedAt: Value(updatedAt),
+      isSynced: Value(isSynced),
     );
   }
 
@@ -1822,6 +1853,7 @@ class CelebracoesLocalData extends DataClass
       dataHora: serializer.fromJson<DateTime>(json['dataHora']),
       criadoPor: serializer.fromJson<String>(json['criadoPor']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
     );
   }
   @override
@@ -1834,6 +1866,7 @@ class CelebracoesLocalData extends DataClass
       'dataHora': serializer.toJson<DateTime>(dataHora),
       'criadoPor': serializer.toJson<String>(criadoPor),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'isSynced': serializer.toJson<bool>(isSynced),
     };
   }
 
@@ -1844,6 +1877,7 @@ class CelebracoesLocalData extends DataClass
     DateTime? dataHora,
     String? criadoPor,
     DateTime? updatedAt,
+    bool? isSynced,
   }) => CelebracoesLocalData(
     id: id ?? this.id,
     grupoId: grupoId ?? this.grupoId,
@@ -1851,6 +1885,7 @@ class CelebracoesLocalData extends DataClass
     dataHora: dataHora ?? this.dataHora,
     criadoPor: criadoPor ?? this.criadoPor,
     updatedAt: updatedAt ?? this.updatedAt,
+    isSynced: isSynced ?? this.isSynced,
   );
   CelebracoesLocalData copyWithCompanion(CelebracoesLocalCompanion data) {
     return CelebracoesLocalData(
@@ -1860,6 +1895,7 @@ class CelebracoesLocalData extends DataClass
       dataHora: data.dataHora.present ? data.dataHora.value : this.dataHora,
       criadoPor: data.criadoPor.present ? data.criadoPor.value : this.criadoPor,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
     );
   }
 
@@ -1871,14 +1907,22 @@ class CelebracoesLocalData extends DataClass
           ..write('titulo: $titulo, ')
           ..write('dataHora: $dataHora, ')
           ..write('criadoPor: $criadoPor, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, grupoId, titulo, dataHora, criadoPor, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    grupoId,
+    titulo,
+    dataHora,
+    criadoPor,
+    updatedAt,
+    isSynced,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1888,7 +1932,8 @@ class CelebracoesLocalData extends DataClass
           other.titulo == this.titulo &&
           other.dataHora == this.dataHora &&
           other.criadoPor == this.criadoPor &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.isSynced == this.isSynced);
 }
 
 class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
@@ -1898,6 +1943,7 @@ class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
   final Value<DateTime> dataHora;
   final Value<String> criadoPor;
   final Value<DateTime> updatedAt;
+  final Value<bool> isSynced;
   final Value<int> rowid;
   const CelebracoesLocalCompanion({
     this.id = const Value.absent(),
@@ -1906,6 +1952,7 @@ class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
     this.dataHora = const Value.absent(),
     this.criadoPor = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.isSynced = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CelebracoesLocalCompanion.insert({
@@ -1915,6 +1962,7 @@ class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
     required DateTime dataHora,
     required String criadoPor,
     required DateTime updatedAt,
+    this.isSynced = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        grupoId = Value(grupoId),
@@ -1929,6 +1977,7 @@ class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
     Expression<DateTime>? dataHora,
     Expression<String>? criadoPor,
     Expression<DateTime>? updatedAt,
+    Expression<bool>? isSynced,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1938,6 +1987,7 @@ class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
       if (dataHora != null) 'data_hora': dataHora,
       if (criadoPor != null) 'criado_por': criadoPor,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (isSynced != null) 'is_synced': isSynced,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1949,6 +1999,7 @@ class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
     Value<DateTime>? dataHora,
     Value<String>? criadoPor,
     Value<DateTime>? updatedAt,
+    Value<bool>? isSynced,
     Value<int>? rowid,
   }) {
     return CelebracoesLocalCompanion(
@@ -1958,6 +2009,7 @@ class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
       dataHora: dataHora ?? this.dataHora,
       criadoPor: criadoPor ?? this.criadoPor,
       updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1983,6 +2035,9 @@ class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1998,6 +2053,7 @@ class CelebracoesLocalCompanion extends UpdateCompanion<CelebracoesLocalData> {
           ..write('dataHora: $dataHora, ')
           ..write('criadoPor: $criadoPor, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2072,6 +2128,21 @@ class $ItensCelebracaoLocalTable extends ItensCelebracaoLocal
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2080,6 +2151,7 @@ class $ItensCelebracaoLocalTable extends ItensCelebracaoLocal
     ordem,
     momentoLiturgico,
     observacao,
+    isSynced,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2140,6 +2212,12 @@ class $ItensCelebracaoLocalTable extends ItensCelebracaoLocal
         observacao.isAcceptableOrUnknown(data['observacao']!, _observacaoMeta),
       );
     }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
     return context;
   }
 
@@ -2180,6 +2258,11 @@ class $ItensCelebracaoLocalTable extends ItensCelebracaoLocal
         DriftSqlType.string,
         data['${effectivePrefix}observacao'],
       ),
+      isSynced:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_synced'],
+          )!,
     );
   }
 
@@ -2197,6 +2280,7 @@ class ItensCelebracaoLocalData extends DataClass
   final int ordem;
   final String momentoLiturgico;
   final String? observacao;
+  final bool isSynced;
   const ItensCelebracaoLocalData({
     required this.id,
     required this.celebracaoId,
@@ -2204,6 +2288,7 @@ class ItensCelebracaoLocalData extends DataClass
     required this.ordem,
     required this.momentoLiturgico,
     this.observacao,
+    required this.isSynced,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2218,6 +2303,7 @@ class ItensCelebracaoLocalData extends DataClass
     if (!nullToAbsent || observacao != null) {
       map['observacao'] = Variable<String>(observacao);
     }
+    map['is_synced'] = Variable<bool>(isSynced);
     return map;
   }
 
@@ -2235,6 +2321,7 @@ class ItensCelebracaoLocalData extends DataClass
           observacao == null && nullToAbsent
               ? const Value.absent()
               : Value(observacao),
+      isSynced: Value(isSynced),
     );
   }
 
@@ -2250,6 +2337,7 @@ class ItensCelebracaoLocalData extends DataClass
       ordem: serializer.fromJson<int>(json['ordem']),
       momentoLiturgico: serializer.fromJson<String>(json['momentoLiturgico']),
       observacao: serializer.fromJson<String?>(json['observacao']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
     );
   }
   @override
@@ -2262,6 +2350,7 @@ class ItensCelebracaoLocalData extends DataClass
       'ordem': serializer.toJson<int>(ordem),
       'momentoLiturgico': serializer.toJson<String>(momentoLiturgico),
       'observacao': serializer.toJson<String?>(observacao),
+      'isSynced': serializer.toJson<bool>(isSynced),
     };
   }
 
@@ -2272,6 +2361,7 @@ class ItensCelebracaoLocalData extends DataClass
     int? ordem,
     String? momentoLiturgico,
     Value<String?> observacao = const Value.absent(),
+    bool? isSynced,
   }) => ItensCelebracaoLocalData(
     id: id ?? this.id,
     celebracaoId: celebracaoId ?? this.celebracaoId,
@@ -2279,6 +2369,7 @@ class ItensCelebracaoLocalData extends DataClass
     ordem: ordem ?? this.ordem,
     momentoLiturgico: momentoLiturgico ?? this.momentoLiturgico,
     observacao: observacao.present ? observacao.value : this.observacao,
+    isSynced: isSynced ?? this.isSynced,
   );
   ItensCelebracaoLocalData copyWithCompanion(
     ItensCelebracaoLocalCompanion data,
@@ -2297,6 +2388,7 @@ class ItensCelebracaoLocalData extends DataClass
               : this.momentoLiturgico,
       observacao:
           data.observacao.present ? data.observacao.value : this.observacao,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
     );
   }
 
@@ -2308,7 +2400,8 @@ class ItensCelebracaoLocalData extends DataClass
           ..write('musicaId: $musicaId, ')
           ..write('ordem: $ordem, ')
           ..write('momentoLiturgico: $momentoLiturgico, ')
-          ..write('observacao: $observacao')
+          ..write('observacao: $observacao, ')
+          ..write('isSynced: $isSynced')
           ..write(')'))
         .toString();
   }
@@ -2321,6 +2414,7 @@ class ItensCelebracaoLocalData extends DataClass
     ordem,
     momentoLiturgico,
     observacao,
+    isSynced,
   );
   @override
   bool operator ==(Object other) =>
@@ -2331,7 +2425,8 @@ class ItensCelebracaoLocalData extends DataClass
           other.musicaId == this.musicaId &&
           other.ordem == this.ordem &&
           other.momentoLiturgico == this.momentoLiturgico &&
-          other.observacao == this.observacao);
+          other.observacao == this.observacao &&
+          other.isSynced == this.isSynced);
 }
 
 class ItensCelebracaoLocalCompanion
@@ -2342,6 +2437,7 @@ class ItensCelebracaoLocalCompanion
   final Value<int> ordem;
   final Value<String> momentoLiturgico;
   final Value<String?> observacao;
+  final Value<bool> isSynced;
   final Value<int> rowid;
   const ItensCelebracaoLocalCompanion({
     this.id = const Value.absent(),
@@ -2350,6 +2446,7 @@ class ItensCelebracaoLocalCompanion
     this.ordem = const Value.absent(),
     this.momentoLiturgico = const Value.absent(),
     this.observacao = const Value.absent(),
+    this.isSynced = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ItensCelebracaoLocalCompanion.insert({
@@ -2359,6 +2456,7 @@ class ItensCelebracaoLocalCompanion
     required int ordem,
     required String momentoLiturgico,
     this.observacao = const Value.absent(),
+    this.isSynced = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        celebracaoId = Value(celebracaoId),
@@ -2371,6 +2469,7 @@ class ItensCelebracaoLocalCompanion
     Expression<int>? ordem,
     Expression<String>? momentoLiturgico,
     Expression<String>? observacao,
+    Expression<bool>? isSynced,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2380,6 +2479,7 @@ class ItensCelebracaoLocalCompanion
       if (ordem != null) 'ordem': ordem,
       if (momentoLiturgico != null) 'momento_liturgico': momentoLiturgico,
       if (observacao != null) 'observacao': observacao,
+      if (isSynced != null) 'is_synced': isSynced,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2391,6 +2491,7 @@ class ItensCelebracaoLocalCompanion
     Value<int>? ordem,
     Value<String>? momentoLiturgico,
     Value<String?>? observacao,
+    Value<bool>? isSynced,
     Value<int>? rowid,
   }) {
     return ItensCelebracaoLocalCompanion(
@@ -2400,6 +2501,7 @@ class ItensCelebracaoLocalCompanion
       ordem: ordem ?? this.ordem,
       momentoLiturgico: momentoLiturgico ?? this.momentoLiturgico,
       observacao: observacao ?? this.observacao,
+      isSynced: isSynced ?? this.isSynced,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2425,6 +2527,9 @@ class ItensCelebracaoLocalCompanion
     if (observacao.present) {
       map['observacao'] = Variable<String>(observacao.value);
     }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2440,6 +2545,7 @@ class ItensCelebracaoLocalCompanion
           ..write('ordem: $ordem, ')
           ..write('momentoLiturgico: $momentoLiturgico, ')
           ..write('observacao: $observacao, ')
+          ..write('isSynced: $isSynced, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3377,6 +3483,7 @@ typedef $$CelebracoesLocalTableCreateCompanionBuilder =
       required DateTime dataHora,
       required String criadoPor,
       required DateTime updatedAt,
+      Value<bool> isSynced,
       Value<int> rowid,
     });
 typedef $$CelebracoesLocalTableUpdateCompanionBuilder =
@@ -3387,6 +3494,7 @@ typedef $$CelebracoesLocalTableUpdateCompanionBuilder =
       Value<DateTime> dataHora,
       Value<String> criadoPor,
       Value<DateTime> updatedAt,
+      Value<bool> isSynced,
       Value<int> rowid,
     });
 
@@ -3426,6 +3534,11 @@ class $$CelebracoesLocalTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3468,6 +3581,11 @@ class $$CelebracoesLocalTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CelebracoesLocalTableAnnotationComposer
@@ -3496,6 +3614,9 @@ class $$CelebracoesLocalTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
 }
 
 class $$CelebracoesLocalTableTableManager
@@ -3548,6 +3669,7 @@ class $$CelebracoesLocalTableTableManager
                 Value<DateTime> dataHora = const Value.absent(),
                 Value<String> criadoPor = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CelebracoesLocalCompanion(
                 id: id,
@@ -3556,6 +3678,7 @@ class $$CelebracoesLocalTableTableManager
                 dataHora: dataHora,
                 criadoPor: criadoPor,
                 updatedAt: updatedAt,
+                isSynced: isSynced,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3566,6 +3689,7 @@ class $$CelebracoesLocalTableTableManager
                 required DateTime dataHora,
                 required String criadoPor,
                 required DateTime updatedAt,
+                Value<bool> isSynced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CelebracoesLocalCompanion.insert(
                 id: id,
@@ -3574,6 +3698,7 @@ class $$CelebracoesLocalTableTableManager
                 dataHora: dataHora,
                 criadoPor: criadoPor,
                 updatedAt: updatedAt,
+                isSynced: isSynced,
                 rowid: rowid,
               ),
           withReferenceMapper:
@@ -3620,6 +3745,7 @@ typedef $$ItensCelebracaoLocalTableCreateCompanionBuilder =
       required int ordem,
       required String momentoLiturgico,
       Value<String?> observacao,
+      Value<bool> isSynced,
       Value<int> rowid,
     });
 typedef $$ItensCelebracaoLocalTableUpdateCompanionBuilder =
@@ -3630,6 +3756,7 @@ typedef $$ItensCelebracaoLocalTableUpdateCompanionBuilder =
       Value<int> ordem,
       Value<String> momentoLiturgico,
       Value<String?> observacao,
+      Value<bool> isSynced,
       Value<int> rowid,
     });
 
@@ -3669,6 +3796,11 @@ class $$ItensCelebracaoLocalTableFilterComposer
 
   ColumnFilters<String> get observacao => $composableBuilder(
     column: $table.observacao,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3711,6 +3843,11 @@ class $$ItensCelebracaoLocalTableOrderingComposer
     column: $table.observacao,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ItensCelebracaoLocalTableAnnotationComposer
@@ -3745,6 +3882,9 @@ class $$ItensCelebracaoLocalTableAnnotationComposer
     column: $table.observacao,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
 }
 
 class $$ItensCelebracaoLocalTableTableManager
@@ -3799,6 +3939,7 @@ class $$ItensCelebracaoLocalTableTableManager
                 Value<int> ordem = const Value.absent(),
                 Value<String> momentoLiturgico = const Value.absent(),
                 Value<String?> observacao = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ItensCelebracaoLocalCompanion(
                 id: id,
@@ -3807,6 +3948,7 @@ class $$ItensCelebracaoLocalTableTableManager
                 ordem: ordem,
                 momentoLiturgico: momentoLiturgico,
                 observacao: observacao,
+                isSynced: isSynced,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3817,6 +3959,7 @@ class $$ItensCelebracaoLocalTableTableManager
                 required int ordem,
                 required String momentoLiturgico,
                 Value<String?> observacao = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ItensCelebracaoLocalCompanion.insert(
                 id: id,
@@ -3825,6 +3968,7 @@ class $$ItensCelebracaoLocalTableTableManager
                 ordem: ordem,
                 momentoLiturgico: momentoLiturgico,
                 observacao: observacao,
+                isSynced: isSynced,
                 rowid: rowid,
               ),
           withReferenceMapper:

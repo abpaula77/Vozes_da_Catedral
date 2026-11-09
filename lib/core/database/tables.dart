@@ -62,6 +62,7 @@ class CelebracoesLocal extends Table {
   DateTimeColumn get dataHora => dateTime()();
   TextColumn get criadoPor => text()();
   DateTimeColumn get updatedAt => dateTime()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -76,6 +77,7 @@ class ItensCelebracaoLocal extends Table {
   IntColumn get ordem => integer()();
   TextColumn get momentoLiturgico => text()();
   TextColumn get observacao => text().nullable()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column> get primaryKey => {id};
