@@ -30,7 +30,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 7 | Montador de Celebração (Rito Romano) | ✅ Concluída, com correção de sincronização | #16 | cb28a56 |
 | 8 | Modo Performance (wakelock, dark mode, rolagem) | ✅ Implementada e testada no aparelho | #17 | 5ed8db9 |
 | 9 | APK release + deploy web Vercel | ✅ Build e deploy validados pelo usuário | #18 | 145af1e |
-| 10 | Classificação de músicas por momento litúrgico e reutilização | 🚧 Implementada e publicada; aguardando validação funcional do usuário | #19 | 02cbbfe |
+| 10 | Classificação de músicas por momento litúrgico e reutilização | ✅ Concluída, publicada e validada pelo usuário | #19 | 02cbbfe |
 
 ---
 
@@ -295,7 +295,8 @@ vercel deploy .\build\web --prod
 - Implementação concluída e enviada em `02cbbfe`: classificação múltipla por momento, filtros no hinário e seletor da celebração, aviso confirmável ao reutilizar música
 - Migration `supabase/migrations/20261109_song_liturgical_moments.sql` aplicada pelo usuário em 09/11/2026
 - Build Web de produção publicado em `https://vozes-da-catedral.vercel.app` após a aplicação da migration
-- Testes automatizados passaram; falta validação funcional pelo usuário de classificação/sincronização, filtro e aviso de reutilização antes de encerrar a issue #19
+- Testes automatizados passaram e o usuário confirmou que a aplicação está funcionando na Vercel
+- Issue #19 fechada e cartão do GitHub Project marcado como Done
 
 ---
 
