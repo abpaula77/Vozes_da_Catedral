@@ -162,6 +162,10 @@ CLI (`npm install --global vercel` e `vercel login`) e execute `vercel --prod`
 na raiz do projeto. O `vercel.json` aponta para `build/web` e redireciona rotas
 do app para a entrada Flutter.
 
+O banco local Drift na Web usa `web/sqlite3.wasm` e `web/drift_worker.js`.
+Esses arquivos devem acompanhar a versão de `drift` e `sqlite3` definida em
+`pubspec.lock`.
+
 Os builds móveis e web usam a configuração Supabase definida em
 `lib/core/config/supabase_config.dart`; use somente uma chave publicável/anon
 protegida pelas políticas RLS, nunca uma chave `service_role`.

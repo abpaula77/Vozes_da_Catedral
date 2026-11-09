@@ -1,5 +1,16 @@
 {
   "outputDirectory": "build/web",
+  "headers": [
+    {
+      "source": "/(.*\\.wasm)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/wasm"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

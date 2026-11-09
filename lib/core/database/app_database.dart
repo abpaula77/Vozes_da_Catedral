@@ -36,7 +36,13 @@ class AppDatabase extends _$AppDatabase {
   );
 
   static QueryExecutor _openConnection() {
-    return driftDatabase(name: 'vozes_da_catedral_db');
+    return driftDatabase(
+      name: 'vozes_da_catedral_db',
+      web: DriftWebOptions(
+        sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+        driftWorker: Uri.parse('drift_worker.js'),
+      ),
+    );
   }
 
   // ── Users ──────────────────────────────────────────────────────────────────

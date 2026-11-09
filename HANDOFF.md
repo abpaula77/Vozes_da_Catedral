@@ -285,6 +285,7 @@ flutter build web --release
 - O release usa `android/key.properties` quando configurado; sem chave usa assinatura debug, apenas para testes
 - `vercel.json` publica `build/web` e redireciona rotas do app para a entrada Flutter
 - `flutter build apk --release` e `flutter build web --release` validados; APK instalado e aberto no Samsung SM-A546E
+- Drift Web configurado com `DriftWebOptions` e runtime WASM compatível com as versões do `pubspec.lock`; login e lista de grupos validados no navegador local
 - Publicação Vercel ainda requer CLI instalado, login e projeto configurado; não considerar deploy concluído antes de validar uma URL publicada
 
 ---
