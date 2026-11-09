@@ -82,6 +82,8 @@ G        A  D
 Hosana nas alturas!
 ```
 
+Consulte o [guia completo do formato `.txt`](docs/formato-musicas.md) para os campos, seções e regras de formatação aceitos.
+
 ---
 
 ## Instalação para Desenvolvimento

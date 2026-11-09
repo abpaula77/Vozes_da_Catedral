@@ -125,56 +125,95 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   void _showCreateGroupDialog(BuildContext context, WidgetRef ref) {
     final nomeController = TextEditingController();
     final descController = TextEditingController();
+    var isCreating = false;
+    String? creationError;
 
     showDialog(
       context: context,
       builder:
-          (ctx) => AlertDialog(
-            title: const Text('Novo Grupo'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nomeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome do grupo',
-                    hintText: 'ex: Coral 19h',
-                    border: OutlineInputBorder(),
+          (ctx) => StatefulBuilder(
+            builder:
+                (ctx, setDialogState) => AlertDialog(
+                  title: const Text('Novo Grupo'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: nomeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nome do grupo',
+                          hintText: 'ex: Coral 19h',
+                          border: OutlineInputBorder(),
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: descController,
+                        decoration: const InputDecoration(
+                          labelText: 'Descrição (opcional)',
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLines: 2,
+                      ),
+                      if (creationError != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Erro ao criar grupo: $creationError',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  textCapitalization: TextCapitalization.words,
+                  actions: [
+                    TextButton(
+                      onPressed: isCreating ? null : () => Navigator.pop(ctx),
+                      child: const Text('Cancelar'),
+                    ),
+                    FilledButton(
+                      onPressed:
+                          isCreating
+                              ? null
+                              : () async {
+                                final nome = nomeController.text.trim();
+                                if (nome.isEmpty) return;
+                                setDialogState(() => isCreating = true);
+                                try {
+                                  await ref
+                                      .read(gruposServiceProvider)
+                                      .createGrupo(
+                                        nome: nome,
+                                        descricao: descController.text.trim(),
+                                      );
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  ref.invalidate(gruposProvider);
+                                } catch (error) {
+                                  if (ctx.mounted) {
+                                    setDialogState(() {
+                                      creationError = error.toString();
+                                    });
+                                  }
+                                } finally {
+                                  if (ctx.mounted) {
+                                    setDialogState(() => isCreating = false);
+                                  }
+                                }
+                              },
+                      child:
+                          isCreating
+                              ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : const Text('Criar'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descController,
-                  decoration: const InputDecoration(
-                    labelText: 'Descrição (opcional)',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () async {
-                  final nome = nomeController.text.trim();
-                  if (nome.isEmpty) return;
-                  Navigator.pop(ctx);
-                  await ref
-                      .read(gruposServiceProvider)
-                      .createGrupo(
-                        nome: nome,
-                        descricao: descController.text.trim(),
-                      );
-                  ref.invalidate(gruposProvider);
-                },
-                child: const Text('Criar'),
-              ),
-            ],
           ),
     );
   }

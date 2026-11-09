@@ -20,6 +20,7 @@ class SongsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final musicasAsync = ref.watch(musicasByGrupoProvider(grupoId));
+    final syncAtAsync = ref.watch(musicasSyncAtProvider(grupoId));
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -38,6 +39,12 @@ class SongsScreen extends ConsumerWidget {
               tooltip: 'Publicar no grupo',
               onPressed: () => _publishMusicas(context, ref),
             ),
+          if (isCoordenador)
+            IconButton(
+              icon: const Icon(Icons.library_music_outlined),
+              tooltip: 'Adicionar do catálogo compartilhado',
+              onPressed: () => _browseCatalog(context, ref),
+            ),
           IconButton(
             icon: const Icon(Icons.cloud_download_outlined),
             tooltip: 'Sincronizar com grupo',
@@ -45,63 +52,80 @@ class SongsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: musicasAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erro: $e')),
-        data: (musicas) {
-          if (musicas.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.music_off,
-                      size: 64,
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.3)),
-                  const SizedBox(height: 16),
-                  Text('Nenhuma música no hinário.',
-                      style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  if (isCoordenador)
-                    FilledButton.tonal(
-                      onPressed: () => _importFile(context, ref),
-                      child: const Text('Importar arquivo .txt'),
-                    )
-                  else
-                    FilledButton.tonal(
-                      onPressed: () => _syncMusicas(context, ref),
-                      child: const Text('Sincronizar com grupo'),
+      body: Column(
+        children: [
+          Expanded(
+            child: musicasAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Erro: $e')),
+              data: (musicas) {
+                if (musicas.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.music_off,
+                          size: 64,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Nenhuma música no hinário.',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        if (isCoordenador)
+                          FilledButton.tonal(
+                            onPressed: () => _importFile(context, ref),
+                            child: const Text('Importar arquivo .txt'),
+                          )
+                        else
+                          FilledButton.tonal(
+                            onPressed: () => _syncMusicas(context, ref),
+                            child: const Text('Sincronizar com grupo'),
+                          ),
+                      ],
                     ),
-                ],
-              ),
-            );
-          }
+                  );
+                }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: musicas.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final musica = musicas[index];
-              return _MusicaCard(
-                musica: musica,
-                isCoordenador: isCoordenador,
-                onDelete: isCoordenador
-                    ? () => _deleteMusica(context, ref, musica)
-                    : null,
-                onTap: () => context.push(AppRoutes.songDetailPath(grupoId, musica.id)),
-              );
-            },
-          );
-        },
+                return ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: musicas.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final musica = musicas[index];
+                    return _MusicaCard(
+                      musica: musica,
+                      isCoordenador: isCoordenador,
+                      onDelete:
+                          isCoordenador
+                              ? () => _deleteMusica(context, ref, musica)
+                              : null,
+                      onTap:
+                          () => context.push(
+                            AppRoutes.songDetailPath(grupoId, musica.id),
+                          ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          _SyncStatus(syncAt: syncAtAsync),
+        ],
       ),
-      floatingActionButton: isCoordenador
-          ? FloatingActionButton.extended(
-              onPressed: () => _importFile(context, ref),
-              icon: const Icon(Icons.add),
-              label: const Text('Importar .txt'),
-            )
-          : null,
+      floatingActionButton:
+          isCoordenador
+              ? FloatingActionButton.extended(
+                onPressed: () => _importFile(context, ref),
+                icon: const Icon(Icons.add),
+                label: const Text('Importar .txt'),
+              )
+              : null,
     );
   }
 
@@ -149,9 +173,9 @@ class SongsScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao publicar: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao publicar: $e')));
       }
     }
   }
@@ -167,36 +191,227 @@ class SongsScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao sincronizar: $e')));
+      }
+    }
+  }
+
+  Future<void> _browseCatalog(BuildContext context, WidgetRef ref) async {
+    try {
+      final songs = await ref
+          .read(songsServiceProvider)
+          .getCatalogoMusicas(grupoId);
+      if (!context.mounted) return;
+
+      if (songs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao sincronizar: $e')),
+          const SnackBar(
+            content: Text('Não há músicas de outros grupos no catálogo.'),
+          ),
+        );
+        return;
+      }
+
+      final selectedSong = await showDialog<SongModel>(
+        context: context,
+        builder: (_) => _CatalogSongDialog(songs: songs),
+      );
+      if (selectedSong == null || !context.mounted) return;
+
+      await ref
+          .read(songsServiceProvider)
+          .copiarMusicaDoCatalogo(grupoId: grupoId, musicaId: selectedSong.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '"${selectedSong.titulo}" copiada para o hinário do grupo.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao consultar ou adicionar do catálogo: $error'),
+          ),
         );
       }
     }
   }
 
   Future<void> _deleteMusica(
-      BuildContext context, WidgetRef ref, SongModel musica) async {
+    BuildContext context,
+    WidgetRef ref,
+    SongModel musica,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remover música?'),
-        content: Text('"${musica.titulo}" será removida do hinário local.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error),
-            child: const Text('Remover'),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Remover música?'),
+            content: Text('"${musica.titulo}" será removida do hinário local.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+                child: const Text('Remover'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
     if (confirm == true) {
       await ref.read(songsServiceProvider).deleteMusica(musica.id);
     }
+  }
+}
+
+class _CatalogSongDialog extends StatefulWidget {
+  final List<SongModel> songs;
+
+  const _CatalogSongDialog({required this.songs});
+
+  @override
+  State<_CatalogSongDialog> createState() => _CatalogSongDialogState();
+}
+
+class _CatalogSongDialogState extends State<_CatalogSongDialog> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final songs =
+        widget.songs
+            .where(
+              (song) =>
+                  song.titulo.toLowerCase().contains(_query.toLowerCase()),
+            )
+            .toList();
+
+    return AlertDialog(
+      title: const Text('Catálogo compartilhado'),
+      content: SizedBox(
+        width: 480,
+        height: 420,
+        child: Column(
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Buscar música',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => setState(() => _query = value.trim()),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child:
+                  songs.isEmpty
+                      ? const Center(child: Text('Nenhuma música encontrada.'))
+                      : ListView.separated(
+                        itemCount: songs.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final song = songs[index];
+                          final details = <String>[
+                            if (song.tomOriginal != null)
+                              'Tom ${song.tomOriginal}',
+                            if (song.bpm != null) '${song.bpm} BPM',
+                          ];
+                          return ListTile(
+                            leading: const Icon(Icons.music_note),
+                            title: Text(song.titulo),
+                            subtitle:
+                                details.isEmpty
+                                    ? null
+                                    : Text(details.join(' · ')),
+                            onTap: () => Navigator.pop(context, song),
+                          );
+                        },
+                      ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Fechar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _SyncStatus extends StatelessWidget {
+  final AsyncValue<DateTime?> syncAt;
+
+  const _SyncStatus({required this.syncAt});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final status = syncAt.when(
+      loading:
+          () => const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 8),
+              Text('Consultando sincronização...'),
+            ],
+          ),
+      error:
+          (error, _) => Text(
+            'Erro ao consultar sincronização: $error',
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
+      data: (date) {
+        if (date == null) {
+          return const Text('Ainda não sincronizado com o grupo.');
+        }
+        final localDate = date.toLocal();
+        final formatted =
+            '${localDate.day.toString().padLeft(2, '0')}/'
+            '${localDate.month.toString().padLeft(2, '0')}/'
+            '${localDate.year} '
+            '${localDate.hour.toString().padLeft(2, '0')}:'
+            '${localDate.minute.toString().padLeft(2, '0')}';
+        return Text('Última sincronização: $formatted');
+      },
+    );
+
+    return Container(
+      width: double.infinity,
+      color: theme.colorScheme.surfaceContainerHighest,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: DefaultTextStyle(
+        style: theme.textTheme.bodySmall!,
+        textAlign: TextAlign.center,
+        child: status,
+      ),
+    );
   }
 }
 
@@ -254,8 +469,10 @@ class _MusicaCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(Icons.music_note,
-                      color: theme.colorScheme.onSurfaceVariant),
+                  child: Icon(
+                    Icons.music_note,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               const SizedBox(width: 16),
               // Title + categories
@@ -263,17 +480,21 @@ class _MusicaCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(musica.titulo,
-                        style: theme.textTheme.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      musica.titulo,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     if (musica.categorias.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 4,
-                        children: musica.categorias
-                            .take(3)
-                            .map((cat) => _CategoryBadge(cat: cat))
-                            .toList(),
+                        children:
+                            musica.categorias
+                                .take(3)
+                                .map((cat) => _CategoryBadge(cat: cat))
+                                .toList(),
                       ),
                     ],
                   ],
@@ -281,8 +502,10 @@ class _MusicaCard extends StatelessWidget {
               ),
               if (onDelete != null)
                 IconButton(
-                  icon: Icon(Icons.delete_outline,
-                      color: theme.colorScheme.error.withValues(alpha: 0.7)),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: theme.colorScheme.error.withValues(alpha: 0.7),
+                  ),
                   onPressed: onDelete,
                   iconSize: 20,
                 ),

@@ -25,8 +25,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 2 | Auth (login, signup, onboarding papel) | ✅ Done | #11 | 3d5e8fc |
 | 3 | Parser de cifras + CifraView (RobotoMono) | ✅ Done | #12 | 3d5e8fc |
 | 4 | Hinário local + importação de .txt | ✅ Done | #13 | 3d5e8fc |
-| 5 | Grupos, RLS, gestão de membros | ✅ Implementada; script aplicado no Supabase | #14 | — |
-| 6 | Sync músicas Coordenador → Supabase → Membros | ⏳ Todo | #15 | — |
+| 5 | Grupos, RLS, gestão de membros | ✅ Correção via RPC aplicada no Supabase; smoke test pendente | #14 | — |
+| 6 | Catálogo compartilhado e sync de músicas | ✅ Catálogo/cópias aplicado no Supabase; teste entre grupos pendente | #15 | — |
 | 7 | Montador de Celebração (Rito Romano) | ⏳ Todo | #16 | — |
 | 8 | Modo Performance (wakelock, dark mode, rolagem) | ⏳ Todo | #17 | — |
 | 9 | APK release + deploy web Vercel | ⏳ Todo | #18 | — |
@@ -49,7 +49,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 
 ## Build Android
 
-O APK debug foi compilado e instalado no Samsung (`RQCW701905N`), e o log mostra a inicialização do Supabase. O `flutter run` encerrou com erro ao conectar ao protocolo de depuração local; a sessão de depuração interativa não foi validada. `flutter build apk --debug --no-pub` concluiu com sucesso.
+O APK debug foi compilado e instalado no Samsung (`RQCW701905N`). Em 08/11/2026, `flutter run -d RQCW701905N --no-pub --no-resident` iniciou o app com sucesso; a migração Drift local v1→v2 também foi exercitada ao abrir o banco existente.
 
 ### Para repetir:
 
@@ -60,7 +60,7 @@ flutter clean
 flutter run -d RQCW701905N
 ```
 
-Se o protocolo de depuração falhar após a instalação, valide a compilação com `flutter build apk --debug --no-pub`. O Kotlin também pode emitir erros de cache incremental entre `C:` e `D:`; nesta sessão, apesar deles, o APK foi gerado.
+Para validar somente a compilação, use `flutter build apk --debug --no-pub`.
 
 ### Fixes Android já aplicados:
 - `android/settings.gradle.kts` → Kotlin `2.1.0` (era 1.8.22)
@@ -116,6 +116,7 @@ lib/
     │       ├── songs_screen.dart          hinário com import .txt, delete, sync
     │       └── song_detail_screen.dart    visualizador CifraView + controles fonte/toggle
     ├── celebrations/
+    │   ├── data/celebrations_provider.dart syncCelebrações para cache offline
     │   └── domain/celebration_model.dart  CelebracaoModel, MomentoLiturgico enum (12 momentos Rito Romano)
     └── splash/presentation/splash_screen.dart
 ```
@@ -201,23 +202,33 @@ O `GruposService` já existe em `lib/features/groups/data/groups_provider.dart` 
 **Validação operacional pendente:**
 - Testar com uma conta membro que a lista de grupos não inclui grupos aos quais ela não pertence; esse teste multiusuário remoto ainda não foi executado nesta sessão
 - A migration `supabase/migrations/20261108_task5_group_access.sql` foi aplicada no Supabase em 08/11/2026
+- A migration `supabase/migrations/20261108_fix_group_creation.sql` foi aplicada no Supabase em 08/11/2026; o APK com criação via RPC foi instalado no dispositivo
 
 ### Task 6 — Sincronização de músicas (issue #15)
 O `SongsService` já existe em `lib/features/songs/data/songs_provider.dart` com:
 - `publishMusicas(grupoId)` — já implementado (upload local → Supabase)
 - `syncMusicas(grupoId)` — já implementado (download Supabase → local)
 
-**O que falta:**
-- Sync de celebrações (não implementado ainda)
-- UI de último sync com timestamp
-- Testar fluxo completo: Coordenador publica → Membro sincroniza → usa offline
+**Implementado nesta continuação:**
+- IDs locais de músicas agora são UUIDs compatíveis com o schema remoto; IDs legados são convertidos antes da publicação, mantendo referências locais
+- Persistência local da última sincronização bem-sucedida e indicador de horário no Hinário
+- `CelebracoesService.syncCelebracoes` baixa celebrações e itens para SQLite em transação, preparando o cache offline para a Task 7
+- Migração Drift v1→v2 cria a tabela local de status sem apagar dados existentes
+- Catálogo compartilhado: usuários autenticados podem consultar músicas de todos os grupos; coordenadores adicionam uma cópia independente ao próprio hinário
+- A cópia registra a música de origem e é idempotente por grupo; alterações posteriores no original não alteram a cópia
+- Guia para preparar arquivos de importação: `docs/formato-musicas.md`
+
+**Validação pendente:**
+- Testar manualmente com duas contas: coordenador publica, membro sincroniza e abre as músicas offline
+- A migration `supabase/migrations/20261108_shared_song_catalog.sql` foi aplicada no Supabase em 08/11/2026; o APK com catálogo compartilhado foi instalado no dispositivo
+- O APK debug compila; os testes do parser TXT e dos UUIDs passam. O analyzer reporta apenas um aviso informativo preexistente.
 
 ### Task 7 — Montador de Celebração (issue #16)
 O `MomentoLiturgico` enum já existe com os 12 momentos.
 O `defaultRitoRomano(celebracaoId)` factory já cria a estrutura vazia.
 
 **O que falta implementar:**
-- `CelebracoesService` com createCelebracao, syncCelebracoes
+- `CelebracoesService.createCelebracao`; reutilizar `syncCelebracoes` já implementado em `lib/features/celebrations/data/celebrations_provider.dart`
 - `CelebracaoScreen` — form com data/hora + título
 - `CelebracaoDetailScreen` — lista dos 12 momentos com slot de música por momento
 - Seletor de música: abre hinário local e vincula ao momento

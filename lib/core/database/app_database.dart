@@ -10,6 +10,7 @@ part 'app_database.g.dart';
     UsersLocal,
     GruposLocal,
     MusicasLocal,
+    SyncStatusLocal,
     CelebracoesLocal,
     ItensCelebracaoLocal,
   ],
@@ -18,7 +19,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) await migrator.createTable(syncStatusLocal);
+    },
+  );
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'vozes_da_catedral_db');
@@ -60,6 +68,32 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteMusica(String id) =>
       (delete(musicasLocal)..where((t) => t.id.equals(id))).go();
+
+  Future<void> updateMusicaId(String oldId, String newId) async {
+    if (oldId == newId) return;
+    await transaction(() async {
+      await (update(musicasLocal)..where(
+        (t) => t.id.equals(oldId),
+      )).write(MusicasLocalCompanion(id: Value(newId)));
+      await (update(itensCelebracaoLocal)..where(
+        (t) => t.musicaId.equals(oldId),
+      )).write(ItensCelebracaoLocalCompanion(musicaId: Value(newId)));
+    });
+  }
+
+  Stream<DateTime?> watchMusicasSyncAt(String grupoId) =>
+      (select(syncStatusLocal)
+        ..where((t) => t.grupoId.equals(grupoId))).watch().map(
+        (rows) => rows.isEmpty ? null : rows.first.musicasSincronizadoEm,
+      );
+
+  Future<void> updateMusicasSyncAt(String grupoId, DateTime syncedAt) =>
+      into(syncStatusLocal).insertOnConflictUpdate(
+        SyncStatusLocalCompanion.insert(
+          grupoId: grupoId,
+          musicasSincronizadoEm: Value(syncedAt),
+        ),
+      );
 
   // ── Celebrations ───────────────────────────────────────────────────────────
 

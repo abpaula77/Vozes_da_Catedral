@@ -1343,6 +1343,252 @@ class MusicasLocalCompanion extends UpdateCompanion<MusicasLocalData> {
   }
 }
 
+class $SyncStatusLocalTable extends SyncStatusLocal
+    with TableInfo<$SyncStatusLocalTable, SyncStatusLocalData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncStatusLocalTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _grupoIdMeta = const VerificationMeta(
+    'grupoId',
+  );
+  @override
+  late final GeneratedColumn<String> grupoId = GeneratedColumn<String>(
+    'grupo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _musicasSincronizadoEmMeta =
+      const VerificationMeta('musicasSincronizadoEm');
+  @override
+  late final GeneratedColumn<DateTime> musicasSincronizadoEm =
+      GeneratedColumn<DateTime>(
+        'musicas_sincronizado_em',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [grupoId, musicasSincronizadoEm];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_status_local';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncStatusLocalData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('grupo_id')) {
+      context.handle(
+        _grupoIdMeta,
+        grupoId.isAcceptableOrUnknown(data['grupo_id']!, _grupoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_grupoIdMeta);
+    }
+    if (data.containsKey('musicas_sincronizado_em')) {
+      context.handle(
+        _musicasSincronizadoEmMeta,
+        musicasSincronizadoEm.isAcceptableOrUnknown(
+          data['musicas_sincronizado_em']!,
+          _musicasSincronizadoEmMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {grupoId};
+  @override
+  SyncStatusLocalData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncStatusLocalData(
+      grupoId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}grupo_id'],
+          )!,
+      musicasSincronizadoEm: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}musicas_sincronizado_em'],
+      ),
+    );
+  }
+
+  @override
+  $SyncStatusLocalTable createAlias(String alias) {
+    return $SyncStatusLocalTable(attachedDatabase, alias);
+  }
+}
+
+class SyncStatusLocalData extends DataClass
+    implements Insertable<SyncStatusLocalData> {
+  final String grupoId;
+  final DateTime? musicasSincronizadoEm;
+  const SyncStatusLocalData({
+    required this.grupoId,
+    this.musicasSincronizadoEm,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['grupo_id'] = Variable<String>(grupoId);
+    if (!nullToAbsent || musicasSincronizadoEm != null) {
+      map['musicas_sincronizado_em'] = Variable<DateTime>(
+        musicasSincronizadoEm,
+      );
+    }
+    return map;
+  }
+
+  SyncStatusLocalCompanion toCompanion(bool nullToAbsent) {
+    return SyncStatusLocalCompanion(
+      grupoId: Value(grupoId),
+      musicasSincronizadoEm:
+          musicasSincronizadoEm == null && nullToAbsent
+              ? const Value.absent()
+              : Value(musicasSincronizadoEm),
+    );
+  }
+
+  factory SyncStatusLocalData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncStatusLocalData(
+      grupoId: serializer.fromJson<String>(json['grupoId']),
+      musicasSincronizadoEm: serializer.fromJson<DateTime?>(
+        json['musicasSincronizadoEm'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'grupoId': serializer.toJson<String>(grupoId),
+      'musicasSincronizadoEm': serializer.toJson<DateTime?>(
+        musicasSincronizadoEm,
+      ),
+    };
+  }
+
+  SyncStatusLocalData copyWith({
+    String? grupoId,
+    Value<DateTime?> musicasSincronizadoEm = const Value.absent(),
+  }) => SyncStatusLocalData(
+    grupoId: grupoId ?? this.grupoId,
+    musicasSincronizadoEm:
+        musicasSincronizadoEm.present
+            ? musicasSincronizadoEm.value
+            : this.musicasSincronizadoEm,
+  );
+  SyncStatusLocalData copyWithCompanion(SyncStatusLocalCompanion data) {
+    return SyncStatusLocalData(
+      grupoId: data.grupoId.present ? data.grupoId.value : this.grupoId,
+      musicasSincronizadoEm:
+          data.musicasSincronizadoEm.present
+              ? data.musicasSincronizadoEm.value
+              : this.musicasSincronizadoEm,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncStatusLocalData(')
+          ..write('grupoId: $grupoId, ')
+          ..write('musicasSincronizadoEm: $musicasSincronizadoEm')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(grupoId, musicasSincronizadoEm);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncStatusLocalData &&
+          other.grupoId == this.grupoId &&
+          other.musicasSincronizadoEm == this.musicasSincronizadoEm);
+}
+
+class SyncStatusLocalCompanion extends UpdateCompanion<SyncStatusLocalData> {
+  final Value<String> grupoId;
+  final Value<DateTime?> musicasSincronizadoEm;
+  final Value<int> rowid;
+  const SyncStatusLocalCompanion({
+    this.grupoId = const Value.absent(),
+    this.musicasSincronizadoEm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncStatusLocalCompanion.insert({
+    required String grupoId,
+    this.musicasSincronizadoEm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : grupoId = Value(grupoId);
+  static Insertable<SyncStatusLocalData> custom({
+    Expression<String>? grupoId,
+    Expression<DateTime>? musicasSincronizadoEm,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (grupoId != null) 'grupo_id': grupoId,
+      if (musicasSincronizadoEm != null)
+        'musicas_sincronizado_em': musicasSincronizadoEm,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncStatusLocalCompanion copyWith({
+    Value<String>? grupoId,
+    Value<DateTime?>? musicasSincronizadoEm,
+    Value<int>? rowid,
+  }) {
+    return SyncStatusLocalCompanion(
+      grupoId: grupoId ?? this.grupoId,
+      musicasSincronizadoEm:
+          musicasSincronizadoEm ?? this.musicasSincronizadoEm,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (grupoId.present) {
+      map['grupo_id'] = Variable<String>(grupoId.value);
+    }
+    if (musicasSincronizadoEm.present) {
+      map['musicas_sincronizado_em'] = Variable<DateTime>(
+        musicasSincronizadoEm.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncStatusLocalCompanion(')
+          ..write('grupoId: $grupoId, ')
+          ..write('musicasSincronizadoEm: $musicasSincronizadoEm, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $CelebracoesLocalTable extends CelebracoesLocal
     with TableInfo<$CelebracoesLocalTable, CelebracoesLocalData> {
   @override
@@ -2206,6 +2452,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $UsersLocalTable usersLocal = $UsersLocalTable(this);
   late final $GruposLocalTable gruposLocal = $GruposLocalTable(this);
   late final $MusicasLocalTable musicasLocal = $MusicasLocalTable(this);
+  late final $SyncStatusLocalTable syncStatusLocal = $SyncStatusLocalTable(
+    this,
+  );
   late final $CelebracoesLocalTable celebracoesLocal = $CelebracoesLocalTable(
     this,
   );
@@ -2219,6 +2468,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     usersLocal,
     gruposLocal,
     musicasLocal,
+    syncStatusLocal,
     celebracoesLocal,
     itensCelebracaoLocal,
   ];
@@ -2950,6 +3200,175 @@ typedef $$MusicasLocalTableProcessedTableManager =
       MusicasLocalData,
       PrefetchHooks Function()
     >;
+typedef $$SyncStatusLocalTableCreateCompanionBuilder =
+    SyncStatusLocalCompanion Function({
+      required String grupoId,
+      Value<DateTime?> musicasSincronizadoEm,
+      Value<int> rowid,
+    });
+typedef $$SyncStatusLocalTableUpdateCompanionBuilder =
+    SyncStatusLocalCompanion Function({
+      Value<String> grupoId,
+      Value<DateTime?> musicasSincronizadoEm,
+      Value<int> rowid,
+    });
+
+class $$SyncStatusLocalTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncStatusLocalTable> {
+  $$SyncStatusLocalTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get grupoId => $composableBuilder(
+    column: $table.grupoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get musicasSincronizadoEm => $composableBuilder(
+    column: $table.musicasSincronizadoEm,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncStatusLocalTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncStatusLocalTable> {
+  $$SyncStatusLocalTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get grupoId => $composableBuilder(
+    column: $table.grupoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get musicasSincronizadoEm => $composableBuilder(
+    column: $table.musicasSincronizadoEm,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncStatusLocalTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncStatusLocalTable> {
+  $$SyncStatusLocalTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get grupoId =>
+      $composableBuilder(column: $table.grupoId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get musicasSincronizadoEm => $composableBuilder(
+    column: $table.musicasSincronizadoEm,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncStatusLocalTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncStatusLocalTable,
+          SyncStatusLocalData,
+          $$SyncStatusLocalTableFilterComposer,
+          $$SyncStatusLocalTableOrderingComposer,
+          $$SyncStatusLocalTableAnnotationComposer,
+          $$SyncStatusLocalTableCreateCompanionBuilder,
+          $$SyncStatusLocalTableUpdateCompanionBuilder,
+          (
+            SyncStatusLocalData,
+            BaseReferences<
+              _$AppDatabase,
+              $SyncStatusLocalTable,
+              SyncStatusLocalData
+            >,
+          ),
+          SyncStatusLocalData,
+          PrefetchHooks Function()
+        > {
+  $$SyncStatusLocalTableTableManager(
+    _$AppDatabase db,
+    $SyncStatusLocalTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () =>
+                  $$SyncStatusLocalTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$SyncStatusLocalTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$SyncStatusLocalTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> grupoId = const Value.absent(),
+                Value<DateTime?> musicasSincronizadoEm = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncStatusLocalCompanion(
+                grupoId: grupoId,
+                musicasSincronizadoEm: musicasSincronizadoEm,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String grupoId,
+                Value<DateTime?> musicasSincronizadoEm = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncStatusLocalCompanion.insert(
+                grupoId: grupoId,
+                musicasSincronizadoEm: musicasSincronizadoEm,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          BaseReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncStatusLocalTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncStatusLocalTable,
+      SyncStatusLocalData,
+      $$SyncStatusLocalTableFilterComposer,
+      $$SyncStatusLocalTableOrderingComposer,
+      $$SyncStatusLocalTableAnnotationComposer,
+      $$SyncStatusLocalTableCreateCompanionBuilder,
+      $$SyncStatusLocalTableUpdateCompanionBuilder,
+      (
+        SyncStatusLocalData,
+        BaseReferences<
+          _$AppDatabase,
+          $SyncStatusLocalTable,
+          SyncStatusLocalData
+        >,
+      ),
+      SyncStatusLocalData,
+      PrefetchHooks Function()
+    >;
 typedef $$CelebracoesLocalTableCreateCompanionBuilder =
     CelebracoesLocalCompanion Function({
       required String id,
@@ -3454,6 +3873,8 @@ class $AppDatabaseManager {
       $$GruposLocalTableTableManager(_db, _db.gruposLocal);
   $$MusicasLocalTableTableManager get musicasLocal =>
       $$MusicasLocalTableTableManager(_db, _db.musicasLocal);
+  $$SyncStatusLocalTableTableManager get syncStatusLocal =>
+      $$SyncStatusLocalTableTableManager(_db, _db.syncStatusLocal);
   $$CelebracoesLocalTableTableManager get celebracoesLocal =>
       $$CelebracoesLocalTableTableManager(_db, _db.celebracoesLocal);
   $$ItensCelebracaoLocalTableTableManager get itensCelebracaoLocal =>

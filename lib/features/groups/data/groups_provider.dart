@@ -44,39 +44,32 @@ class GruposService {
   Future<String> createGrupo({required String nome, String? descricao}) async {
     final userId = _userId;
     if (userId == null) throw Exception('Usuário não autenticado');
+    final normalizedDescription = descricao?.trim();
+    final groupDescription =
+        normalizedDescription == null || normalizedDescription.isEmpty
+            ? null
+            : normalizedDescription;
 
-    final result =
-        await (_supabase
-                .from('grupos')
-                .insert({
-                  'nome': nome,
-                  'descricao': descricao,
-                  'criado_por': userId,
-                })
-                .select()
-                .single())
-            as Map<String, dynamic>;
-
-    // Add creator as coordenador in membros_grupo
-    await _supabase.from('membros_grupo').insert({
-      'grupo_id': result['id'],
-      'user_id': userId,
-      'papel': 'coordenador',
-    });
+    final grupoId =
+        await _supabase.rpc(
+              'create_group',
+              params: {'p_nome': nome.trim(), 'p_descricao': groupDescription},
+            )
+            as String;
 
     // Persist locally
     await _db.upsertGrupo(
       GruposLocalCompanion.insert(
-        id: result['id'] as String,
+        id: grupoId,
         nome: nome,
-        descricao: drift.Value(descricao),
+        descricao: drift.Value(groupDescription),
         criadoPor: userId,
         meuPapel: const drift.Value('coordenador'),
         updatedAt: DateTime.now(),
       ),
     );
 
-    return result['id'] as String;
+    return grupoId;
   }
 
   /// Sync groups from Supabase to local DB for the current user
