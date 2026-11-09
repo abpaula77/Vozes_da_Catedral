@@ -112,26 +112,75 @@ class SongsService {
     final musicas = await _db.getMusicasByGrupo(grupoId);
     int count = 0;
     for (final m in musicas) {
-      final musicaId = SongId.isUuid(m.id) ? m.id : SongId.generate();
-      if (musicaId != m.id) {
-        await _db.updateMusicaId(m.id, musicaId);
-      }
-      await _supabase.from('musicas').upsert({
-        'id': musicaId,
-        'grupo_id': m.grupoId,
-        'titulo': m.titulo,
-        'tom_original': m.tomOriginal,
-        'bpm': m.bpm,
-        'categorias': jsonDecode(m.categorias),
-        'conteudo_raw': m.conteudoRaw,
-        'conteudo_json': jsonDecode(m.conteudoJson),
-        'criado_por': userId,
-        'updated_at': m.updatedAt.toIso8601String(),
-      });
+      await _publishMusica(m, userId);
       count++;
     }
     await _db.updateMusicasSyncAt(grupoId, DateTime.now());
     return count;
+  }
+
+  /// Ensure a song selected for a celebration exists remotely before its FK
+  /// is written. Local-only songs are published by the group coordinator.
+  Future<void> ensureMusicaPublished({
+    required String grupoId,
+    required String musicaId,
+  }) async {
+    final song = await _db.getMusica(musicaId);
+    if (song != null && song.grupoId != grupoId) {
+      throw StateError(
+        'A música selecionada não pertence ao hinário deste grupo.',
+      );
+    }
+
+    if (SongId.isUuid(musicaId)) {
+      final remote =
+          await _supabase
+                  .from('musicas')
+                  .select('id')
+                  .eq('id', musicaId)
+                  .eq('grupo_id', grupoId)
+                  .maybeSingle()
+              as Map<String, dynamic>?;
+      if (remote != null) return;
+    }
+
+    if (song == null) {
+      throw StateError(
+        'A música selecionada não foi encontrada no hinário local nem no '
+        'Supabase. Sincronize o hinário e selecione a música novamente.',
+      );
+    }
+
+    final userId = _userId;
+    if (userId == null) throw Exception('Usuário não autenticado');
+    try {
+      await _publishMusica(song, userId);
+    } catch (error) {
+      throw StateError(
+        'A música "${song.titulo}" ainda não foi publicada no grupo. '
+        'Conecte-se como coordenador e publique o hinário antes de '
+        'sincronizar a celebração. Detalhe: $error',
+      );
+    }
+  }
+
+  Future<void> _publishMusica(MusicasLocalData song, String userId) async {
+    final musicaId = SongId.isUuid(song.id) ? song.id : SongId.generate();
+    if (musicaId != song.id) {
+      await _db.updateMusicaId(song.id, musicaId);
+    }
+    await _supabase.from('musicas').upsert({
+      'id': musicaId,
+      'grupo_id': song.grupoId,
+      'titulo': song.titulo,
+      'tom_original': song.tomOriginal,
+      'bpm': song.bpm,
+      'categorias': jsonDecode(song.categorias),
+      'conteudo_raw': song.conteudoRaw,
+      'conteudo_json': jsonDecode(song.conteudoJson),
+      'criado_por': userId,
+      'updated_at': song.updatedAt.toIso8601String(),
+    });
   }
 
   /// Download all songs for a group from Supabase to local DB

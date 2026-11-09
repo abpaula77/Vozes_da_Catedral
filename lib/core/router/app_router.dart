@@ -7,6 +7,7 @@ import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/celebrations/presentation/celebrations_screen.dart';
+import '../../features/celebrations/presentation/performance_screen.dart';
 import '../../features/groups/presentation/group_detail_screen.dart';
 import '../../features/groups/presentation/group_members_screen.dart';
 import '../../features/groups/presentation/groups_screen.dart';
@@ -25,6 +26,8 @@ class AppRoutes {
   static const celebrations = '/groups/:grupoId/celebrations';
   static const celebrationDetail =
       '/groups/:grupoId/celebrations/:celebracaoId';
+  static const performance =
+      '/groups/:grupoId/celebrations/:celebracaoId/performance';
 
   static String groupDetailPath(String grupoId) => '/groups/$grupoId';
   static String groupMembersPath(String grupoId) => '/groups/$grupoId/members';
@@ -34,6 +37,8 @@ class AppRoutes {
       '/groups/$grupoId/celebrations';
   static String celebrationDetailPath(String grupoId, String celebracaoId) =>
       '/groups/$grupoId/celebrations/$celebracaoId';
+  static String performancePath(String grupoId, String celebracaoId) =>
+      '/groups/$grupoId/celebrations/$celebracaoId/performance';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -112,6 +117,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                           celebracaoId: state.pathParameters['celebracaoId']!,
                           isCoordenador: state.extra as bool? ?? false,
                         ),
+                    routes: [
+                      GoRoute(
+                        path: 'performance',
+                        builder:
+                            (context, state) => PerformanceScreen(
+                              grupoId: state.pathParameters['grupoId']!,
+                              celebracaoId:
+                                  state.pathParameters['celebracaoId']!,
+                            ),
+                      ),
+                    ],
                   ),
                 ],
               ),

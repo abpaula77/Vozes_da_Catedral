@@ -3,17 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../core/database/database_provider.dart';
 import '../../../core/router/app_router.dart';
 import '../../songs/data/songs_provider.dart';
 import '../../songs/domain/song_model.dart';
 import '../data/celebrations_provider.dart';
 import '../domain/celebration_model.dart';
-
-final celebracaoLocalProvider =
-    FutureProvider.family<CelebracoesLocalData?, String>((ref, id) {
-      return ref.watch(databaseProvider).getCelebracao(id);
-    });
 
 class CelebrationsScreen extends ConsumerStatefulWidget {
   final String grupoId;
@@ -373,6 +367,17 @@ class _CelebrationDetailScreenState
                       ? null
                       : () => _editCelebracao(celebrationAsync.valueOrNull!),
             ),
+          IconButton(
+            icon: const Icon(Icons.play_arrow),
+            tooltip: 'Abrir modo performance',
+            onPressed:
+                () => context.push(
+                  AppRoutes.performancePath(
+                    widget.grupoId,
+                    widget.celebracaoId,
+                  ),
+                ),
+          ),
           IconButton(
             icon:
                 _isSyncing

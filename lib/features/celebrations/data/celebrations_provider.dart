@@ -4,8 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../songs/data/songs_provider.dart';
 import '../../songs/domain/song_id.dart';
 import '../domain/celebration_model.dart';
+
+final celebracaoLocalProvider =
+    FutureProvider.family<CelebracoesLocalData?, String>((ref, id) {
+      return ref.watch(databaseProvider).getCelebracao(id);
+    });
 
 final celebracoesByGrupoProvider =
     StreamProvider.family<List<CelebracoesLocalData>, String>((ref, grupoId) {
@@ -71,6 +77,21 @@ class CelebracoesService {
   /// Push local edits, then download the group's current data for offline use.
   Future<int> syncCelebracoes(String grupoId) async {
     final localCelebrations = await _db.getCelebracoesByGrupo(grupoId);
+    final pendingMusicIds = <String>{};
+    for (final celebration in localCelebrations) {
+      final localItems = await _db.getItensByCelebracao(celebration.id);
+      pendingMusicIds.addAll(
+        localItems
+            .where((item) => !item.isSynced && item.musicaId != null)
+            .map((item) => item.musicaId!),
+      );
+    }
+    for (final musicaId in pendingMusicIds) {
+      await _ref
+          .read(songsServiceProvider)
+          .ensureMusicaPublished(grupoId: grupoId, musicaId: musicaId);
+    }
+
     for (final celebration in localCelebrations.where((row) => !row.isSynced)) {
       await _supabase.from('celebracoes').upsert({
         'id': celebration.id,

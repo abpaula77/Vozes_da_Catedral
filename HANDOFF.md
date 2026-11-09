@@ -13,7 +13,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit:** `7b7bc29` — feat: compartilhar catalogo de musicas entre grupos
+**Último commit:** `032872a` — feat: montar celebracoes com suporte offline
 
 ---
 
@@ -28,7 +28,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 5 | Grupos, RLS, gestão de membros | ✅ Correção via RPC aplicada no Supabase; smoke test pendente | #14 | — |
 | 6 | Catálogo compartilhado e sync de músicas | ✅ Catálogo/cópias aplicado no Supabase; teste entre grupos pendente | #15 | — |
 | 7 | Montador de Celebração (Rito Romano) | ✅ Implementado e aberto no aparelho; validação funcional Supabase/offline pendente | #16 | — |
-| 8 | Modo Performance (wakelock, dark mode, rolagem) | ⏳ Todo | #17 | — |
+| 8 | Modo Performance (wakelock, dark mode, rolagem) | 🚧 Em implementação | #17 | — |
 | 9 | APK release + deploy web Vercel | ⏳ Todo | #18 | — |
 
 ---
@@ -133,6 +133,7 @@ lib/
 /groups/:grupoId/songs/:musicaId → SongDetailScreen
 /groups/:grupoId/celebrations → CelebrationsScreen
 /groups/:grupoId/celebrations/:celebracaoId → CelebrationDetailScreen
+/groups/:grupoId/celebrations/:celebracaoId/performance → PerformanceScreen
 ```
 
 ### Fluxo de auth
@@ -237,10 +238,12 @@ O `defaultRitoRomano(celebracaoId)` factory já cria a estrutura vazia.
 - Sincronização envia celebrações/itens pendentes e baixa os dados remotos; ações de escrita respeitam as políticas RLS existentes
 - IDs de celebrações e itens gerados como UUID; migração Drift v2→v3 adiciona estado de sincronização sem apagar os dados existentes
 - Reconciliação remove do cache as celebrações apagadas remotamente
+- Antes de sincronizar itens pendentes, garante que cada música referenciada exista no Supabase; músicas locais ainda não publicadas são publicadas pelo coordenador, evitando violação da FK `itens_celebracao.musica_id`
 
 **Validação pendente:**
 - `flutter test` passou; `dart analyze` nos arquivos alterados não encontrou problemas
 - `flutter build apk --debug` passou; APK instalado e app aberto no Samsung SM-A546E (`RQCW701905N`) em 09/11/2026
+- Correção da FK de música validada por análise/testes/build; APK corrigido reinstalado em 09/11/2026, aguardando reteste funcional da celebração no aparelho
 - A conexão do Flutter com o protocolo de depuração caiu depois da abertura; instalação e processo/tela ativa foram confirmados via ADB
 - Testar no Supabase as operações de coordenador/membro e a sincronização com rede indisponível e posterior restauração; não foi necessária migration Supabase nesta task
 
@@ -252,6 +255,17 @@ O `defaultRitoRomano(celebracaoId)` factory já cria a estrutura vazia.
 - Barra flutuante de controles: fonte+/-, toggle cifras, tema dark/light
 - Navegação rápida: índice lateral ou bottom bar com os momentos
 - Dark mode: já configurado em `AppTheme.dark` (surface `#1A1A1A`, onSurface `#E8E0D5`)
+
+**Implementação iniciada:**
+- Rota de performance adicionada ao detalhe da celebração
+- Leitura contínua offline de itens e músicas locais, com cifras/letras, observações e navegação rápida por momento
+- Controles de fonte, cifras e tema; wakelock ativado enquanto a tela está em primeiro plano
+- `flutter test` e análise Dart dos arquivos alterados passaram; `flutter build apk --debug` concluiu
+- APK debug instalado e app aberto no Samsung SM-A546E (`RQCW701905N`); ainda falta navegar e validar manualmente a nova tela Performance no aparelho
+
+### Melhorias futuras do montador (issue #19)
+- Classificar/filtrar o catálogo por momento litúrgico, além das categorias livres atuais
+- Avaliar aviso ou política configurável para reutilização da mesma música em vários momentos
 
 ### Task 9 — Build e Deploy (issue #18)
 ```bash
