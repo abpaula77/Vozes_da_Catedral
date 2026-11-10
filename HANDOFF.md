@@ -31,7 +31,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 8 | Modo Performance (wakelock, dark mode, rolagem) | ✅ Implementada e testada no aparelho | #17 | 5ed8db9 |
 | 9 | APK release + deploy web Vercel | ✅ Build e deploy validados pelo usuário | #18 | 145af1e |
 | 10 | Classificação de músicas por momento litúrgico e reutilização | ✅ Concluída, publicada e validada pelo usuário | #19 | 02cbbfe |
-| 11 | Autenticação com Google (Web e Android) | 🚧 Login Web validado pelo usuário; falta testar retorno via deep link Android | #20 | 44ad595 |
+| 11 | Autenticação com Google (Web e Android) | ✅ Implementada e validada pelo usuário na Web e Android | #20 | 44ad595 |
 
 ---
 
@@ -304,7 +304,8 @@ vercel deploy .\build\web --prod
 - Deep link `io.supabase.vozesdacatedral://login-callback/` registrado no manifesto Android
 - README documenta a configuração externa; credenciais Google/Supabase configuradas pelo usuário
 - Login Google na Vercel validado pelo usuário em 10/11/2026; após autorização, retornou ao app autenticado na tela de grupos
-- Build Android passou; aguarda teste real do retorno OAuth via deep link com um aparelho conectado
+- Login Google no Android validado pelo usuário no Samsung SM A546E em 10/11/2026
+- Issue #20 fechada e cartão do GitHub Project marcado como Done
 
 ---
 
