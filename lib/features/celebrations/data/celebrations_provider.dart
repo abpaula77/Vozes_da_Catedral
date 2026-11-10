@@ -74,6 +74,39 @@ class CelebracoesService {
     return celebracaoId;
   }
 
+  /// Create an independent copy of a celebration in another group.
+  Future<String> copiarCelebracaoParaGrupo({
+    required String celebracaoId,
+    required String grupoOrigemId,
+    required String grupoDestinoId,
+  }) async {
+    if (_ref.read(currentUserIdProvider) == null) {
+      throw Exception('Usuário não autenticado');
+    }
+
+    await syncCelebracoes(grupoOrigemId);
+    final copiedId =
+        await _supabase.rpc(
+              'copy_celebration_to_group',
+              params: {
+                'p_celebracao_id': celebracaoId,
+                'p_grupo_destino_id': grupoDestinoId,
+              },
+            )
+            as String;
+
+    try {
+      await _ref.read(songsServiceProvider).syncMusicas(grupoDestinoId);
+      await syncCelebracoes(grupoDestinoId);
+    } catch (error) {
+      throw StateError(
+        'A cópia foi criada no servidor, mas não foi sincronizada neste '
+        'dispositivo (ID $copiedId). Detalhe: $error',
+      );
+    }
+    return copiedId;
+  }
+
   /// Push local edits, then download the group's current data for offline use.
   Future<int> syncCelebracoes(String grupoId) async {
     final localCelebrations = await _db.getCelebracoesByGrupo(grupoId);

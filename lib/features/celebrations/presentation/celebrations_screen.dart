@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/router/app_router.dart';
+import '../../groups/data/groups_provider.dart';
+import '../../groups/domain/group_model.dart';
 import '../../songs/data/songs_provider.dart';
 import '../../songs/domain/song_model.dart';
 import '../data/celebrations_provider.dart';
@@ -187,6 +189,7 @@ class CelebrationDetailScreen extends ConsumerStatefulWidget {
 class _CelebrationDetailScreenState
     extends ConsumerState<CelebrationDetailScreen> {
   bool _isSyncing = false;
+  bool _isSharing = false;
 
   @override
   void initState() {
@@ -244,6 +247,93 @@ class _CelebrationDetailScreenState
           SnackBar(content: Text('Erro ao editar celebração: $error')),
         );
       }
+    }
+  }
+
+  Future<void> _shareCelebracao(
+    CelebracoesLocalData celebration,
+    List<GrupoModel> grupos,
+  ) async {
+    final destinos =
+        grupos
+            .where((grupo) => grupo.id != widget.grupoId && grupo.isCoordenador)
+            .toList();
+    if (destinos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Você precisa ser coordenador de outro grupo para compartilhar.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final destino = await showDialog<GrupoModel>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Compartilhar cópia'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Será criada uma celebração independente. As músicas '
+                    'utilizadas também serão adicionadas ao hinário do grupo.',
+                  ),
+                  const SizedBox(height: 12),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 280),
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final grupo in destinos)
+                          ListTile(
+                            leading: const Icon(Icons.groups_outlined),
+                            title: Text(grupo.nome),
+                            onTap: () => Navigator.pop(context, grupo),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+            ],
+          ),
+    );
+    if (destino == null || !mounted) return;
+
+    setState(() => _isSharing = true);
+    try {
+      await ref
+          .read(celebracoesServiceProvider)
+          .copiarCelebracaoParaGrupo(
+            celebracaoId: celebration.id,
+            grupoOrigemId: widget.grupoId,
+            grupoDestinoId: destino.id,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cópia criada em ${destino.nome}.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao compartilhar celebração: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
     }
   }
 
@@ -408,6 +498,7 @@ class _CelebrationDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    final gruposAsync = ref.watch(gruposProvider);
     final celebrationAsync = ref.watch(
       celebracaoLocalProvider(widget.celebracaoId),
     );
@@ -424,6 +515,27 @@ class _CelebrationDetailScreenState
           orElse: () => const Text('Celebração'),
         ),
         actions: [
+          if (widget.isCoordenador)
+            IconButton(
+              icon:
+                  _isSharing
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Icon(Icons.ios_share),
+              tooltip: 'Compartilhar cópia com outro grupo',
+              onPressed:
+                  _isSharing ||
+                          celebrationAsync.valueOrNull == null ||
+                          !gruposAsync.hasValue
+                      ? null
+                      : () => _shareCelebracao(
+                        celebrationAsync.valueOrNull!,
+                        gruposAsync.requireValue,
+                      ),
+            ),
           if (widget.isCoordenador)
             IconButton(
               icon: const Icon(Icons.edit),

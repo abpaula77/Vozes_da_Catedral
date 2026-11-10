@@ -21,6 +21,7 @@ O app permite que o **Coordenador** monte a estrutura completa de uma celebraç�
 - 🎵 **Hinário** — Importação de músicas via arquivo `.txt` com cifras e letras
 - ✝️ **Classificação litúrgica** — Associação de músicas a momentos do Rito Romano, com filtros no hinário e no montador
 - ✝️ **Montador de Celebração** — Estrutura do Rito Romano com slots para cada momento litúrgico
+- 🔁 **Compartilhamento de celebrações** — Coordenadores podem copiar uma celebração configurada para outro grupo; a cópia é independente e leva as músicas usadas para o hinário de destino
 - 🌙 **Modo Performance** — Dark mode, ajuste de fonte, toggle de cifras, rolagem contínua, tela sempre ativa
 - 📲 **Offline-first** — Músicas e celebrações sincronizadas ficam disponíveis sem internet durante a missa
 
@@ -111,6 +112,10 @@ cp .env.example .env
 # Execute o app
 flutter run
 ```
+
+Em projetos Supabase já configurados, aplique
+`supabase/migrations/20261110_copy_celebration_between_groups.sql` no SQL Editor
+do Supabase para habilitar o compartilhamento de celebrações.
 
 ---
 
