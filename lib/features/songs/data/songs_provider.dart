@@ -283,6 +283,49 @@ class SongsService {
     await syncMusicas(grupoId);
     return copiedId;
   }
+
+  /// Copy every song in the shared catalog, then sync the local library once.
+  Future<int> copiarTodasMusicasDoCatalogo({
+    required String grupoId,
+    required List<SongModel> musicas,
+  }) async {
+    var copiedCount = 0;
+    Object? copyError;
+
+    for (final musica in musicas) {
+      try {
+        await _supabase.rpc(
+          'copy_song_to_group',
+          params: {'p_musica_id': musica.id, 'p_grupo_id': grupoId},
+        );
+        copiedCount++;
+      } catch (error) {
+        copyError = error;
+        break;
+      }
+    }
+
+    try {
+      await syncMusicas(grupoId);
+    } catch (syncError) {
+      if (copyError != null) {
+        throw StateError(
+          'Falha ao adicionar músicas após $copiedCount de '
+          '${musicas.length} tentativas ($copyError). '
+          'Também não foi possível sincronizar o hinário: $syncError',
+        );
+      }
+      rethrow;
+    }
+
+    if (copyError != null) {
+      throw StateError(
+        'Falha ao adicionar músicas após $copiedCount de '
+        '${musicas.length} tentativas: $copyError',
+      );
+    }
+    return copiedCount;
+  }
 }
 
 final songsServiceProvider = Provider<SongsService>((ref) => SongsService(ref));

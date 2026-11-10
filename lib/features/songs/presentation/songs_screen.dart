@@ -321,12 +321,30 @@ class SongsScreen extends ConsumerWidget {
         return;
       }
 
-      final selectedSong = await showDialog<SongModel>(
+      final selection = await showDialog<_CatalogSongSelection>(
         context: context,
         builder: (_) => _CatalogSongDialog(songs: songs),
       );
-      if (selectedSong == null || !context.mounted) return;
+      if (selection == null || !context.mounted) return;
 
+      if (selection.addAll) {
+        final count = await ref
+            .read(songsServiceProvider)
+            .copiarTodasMusicasDoCatalogo(grupoId: grupoId, musicas: songs);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '$count música(s) do catálogo foram adicionadas ou já '
+                'estavam no hinário.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final selectedSong = selection.song!;
       await ref
           .read(songsServiceProvider)
           .copiarMusicaDoCatalogo(grupoId: grupoId, musicaId: selectedSong.id);
@@ -444,6 +462,14 @@ class _SongMomentsDialogState extends State<_SongMomentsDialog> {
   }
 }
 
+class _CatalogSongSelection {
+  final SongModel? song;
+  final bool addAll;
+
+  const _CatalogSongSelection.song(this.song) : addAll = false;
+  const _CatalogSongSelection.all() : song = null, addAll = true;
+}
+
 class _CatalogSongDialog extends StatefulWidget {
   final List<SongModel> songs;
 
@@ -511,7 +537,11 @@ class _CatalogSongDialogState extends State<_CatalogSongDialog> {
                                 details.isEmpty
                                     ? null
                                     : Text(details.join(' · ')),
-                            onTap: () => Navigator.pop(context, song),
+                            onTap:
+                                () => Navigator.pop(
+                                  context,
+                                  _CatalogSongSelection.song(song),
+                                ),
                           );
                         },
                       ),
@@ -523,6 +553,37 @@ class _CatalogSongDialogState extends State<_CatalogSongDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Fechar'),
+        ),
+        FilledButton.icon(
+          onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder:
+                  (context) => AlertDialog(
+                    title: const Text('Adicionar todas as músicas?'),
+                    content: Text(
+                      'As ${widget.songs.length} músicas do catálogo serão '
+                      'adicionadas ao hinário do grupo. As que já foram '
+                      'adicionadas não serão duplicadas.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Adicionar todas'),
+                      ),
+                    ],
+                  ),
+            );
+            if (confirmed == true && context.mounted) {
+              Navigator.pop(context, const _CatalogSongSelection.all());
+            }
+          },
+          icon: const Icon(Icons.library_add),
+          label: Text('Adicionar todas (${widget.songs.length})'),
         ),
       ],
     );
