@@ -13,7 +13,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit:** `60bc3d8` — fix: tratar cadastro com confirmacao de email
+**Último commit:** `44ad595` — feat: add Google OAuth sign-in
 
 ---
 
