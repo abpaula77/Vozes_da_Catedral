@@ -171,6 +171,28 @@ Os builds móveis e web usam a configuração Supabase definida em
 `lib/core/config/supabase_config.dart`; use somente uma chave publicável/anon
 protegida pelas políticas RLS, nunca uma chave `service_role`.
 
+### Login com Google (Supabase)
+
+Para habilitar **Continuar com Google**:
+
+1. No Google Cloud Console, crie um OAuth Client ID do tipo Web e configure a
+   tela de consentimento.
+2. No Supabase, abra **Authentication → Providers → Google**, habilite o
+   provedor e informe o Client ID e o Client Secret.
+3. No Google Cloud, adicione como URI de redirecionamento autorizado o callback
+   mostrado pelo Supabase (para este projeto:
+   `https://npujroyocclobjrpeaed.supabase.co/auth/v1/callback`).
+4. Em **Supabase → Authentication → URL Configuration**, mantenha a URL do site
+   de produção e adicione `https://vozes-da-catedral.vercel.app` às URLs de
+   redirecionamento permitidas. Para desenvolvimento Web local, permita também
+   a origem local utilizada pelo Flutter.
+5. O Android retorna pelo deep link
+   `io.supabase.vozesdacatedral://login-callback/`, registrado no manifesto do
+   app.
+
+O Client Secret pertence apenas à configuração do provedor no Supabase; não o
+coloque no código nem no repositório.
+
 ---
 
 ## Contribuindo

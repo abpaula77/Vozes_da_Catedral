@@ -68,6 +68,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _infoMessage = null;
+    });
+
+    try {
+      await ref.read(authServiceProvider).signInWithGoogle();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage =
+              'Não foi possível entrar com Google. Verifique a configuração '
+              'do provedor e tente novamente. Detalhe: $e';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   String _friendlyError(String error) {
     if (error.contains('Invalid login credentials')) {
       return 'E-mail ou senha incorretos.';
@@ -100,8 +122,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Logo
-                    Icon(Icons.music_note_rounded,
-                        size: 64, color: theme.colorScheme.primary),
+                    Icon(
+                      Icons.music_note_rounded,
+                      size: 64,
+                      color: theme.colorScheme.primary,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Vozes da Catedral',
@@ -129,8 +154,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           border: OutlineInputBorder(),
                         ),
                         textCapitalization: TextCapitalization.words,
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? 'Informe seu nome' : null,
+                        validator:
+                            (v) =>
+                                (v == null || v.trim().isEmpty)
+                                    ? 'Informe seu nome'
+                                    : null,
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -199,24 +227,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Submit button
                     FilledButton(
                       onPressed: _isLoading ? null : _submit,
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(_isSignUp ? 'Criar conta' : 'Entrar'),
+                      child:
+                          _isLoading
+                              ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Text(_isSignUp ? 'Criar conta' : 'Entrar'),
+                    ),
+
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _signInWithGoogle,
+                      icon: const Icon(Icons.g_mobiledata, size: 28),
+                      label: const Text('Continuar com Google'),
                     ),
 
                     const SizedBox(height: 16),
 
                     // Toggle sign up / login
                     TextButton(
-                      onPressed: () => setState(() {
-                        _isSignUp = !_isSignUp;
-                        _errorMessage = null;
-                        _infoMessage = null;
-                      }),
+                      onPressed:
+                          () => setState(() {
+                            _isSignUp = !_isSignUp;
+                            _errorMessage = null;
+                            _infoMessage = null;
+                          }),
                       child: Text(
                         _isSignUp
                             ? 'Já tem conta? Entrar'

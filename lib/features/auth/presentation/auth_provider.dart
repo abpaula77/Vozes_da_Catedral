@@ -74,7 +74,10 @@ class AuthService {
   Future<void> signInWithGoogle() async {
     await _client.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: 'io.supabase.vozesdacatedral://login-callback',
+      redirectTo:
+          kIsWeb
+              ? Uri.base.origin
+              : 'io.supabase.vozesdacatedral://login-callback/',
     );
   }
 
