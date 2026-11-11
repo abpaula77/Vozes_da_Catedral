@@ -153,6 +153,25 @@ class GruposService {
     }).toList();
   }
 
+  /// List registered app users who can be added to this group.
+  Future<List<UsuarioDisponivelGrupoModel>> getUsuariosDisponiveis(
+    String grupoId,
+  ) async {
+    final rows =
+        await _supabase.rpc(
+              'list_group_invitees',
+              params: {'p_grupo_id': grupoId},
+            )
+            as List<dynamic>;
+
+    return rows
+        .map(
+          (row) =>
+              UsuarioDisponivelGrupoModel.fromJson(row as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
   /// Add a member to a group by email (Coordenador only)
   Future<void> addMembro({
     required String grupoId,
@@ -170,6 +189,21 @@ class GruposService {
       throw Exception('Usuário não encontrado com esse e-mail.');
     }
 
+    await _addMembroPorId(grupoId: grupoId, userId: userId, papel: papel);
+  }
+
+  /// Add a selected registered app user to a group (Coordenador only).
+  Future<void> addMembroPorId({
+    required String grupoId,
+    required String userId,
+    String papel = 'membro',
+  }) => _addMembroPorId(grupoId: grupoId, userId: userId, papel: papel);
+
+  Future<void> _addMembroPorId({
+    required String grupoId,
+    required String userId,
+    required String papel,
+  }) async {
     await _supabase.from('membros_grupo').insert({
       'grupo_id': grupoId,
       'user_id': userId,

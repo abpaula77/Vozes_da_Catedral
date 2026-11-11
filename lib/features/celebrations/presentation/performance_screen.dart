@@ -29,6 +29,7 @@ class PerformanceScreen extends ConsumerStatefulWidget {
 class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
     with WidgetsBindingObserver {
   final Map<String, GlobalKey> _momentKeys = {};
+  final Set<String> _collapsedMoments = {};
 
   double _fontSize = 20;
   bool _showChords = true;
@@ -224,10 +225,40 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${item.ordem + 1}. '
-                      '${MomentoLiturgico.fromString(item.momentoLiturgico).label}',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    InkWell(
+                      onTap:
+                          song == null
+                              ? null
+                              : () => setState(() {
+                                if (!_collapsedMoments.add(item.id)) {
+                                  _collapsedMoments.remove(item.id);
+                                }
+                              }),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${item.ordem + 1}. '
+                                '${MomentoLiturgico.fromString(item.momentoLiturgico).label}',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                            ),
+                            if (song != null)
+                              Icon(
+                                _collapsedMoments.contains(item.id)
+                                    ? Icons.expand_more
+                                    : Icons.expand_less,
+                                semanticLabel:
+                                    _collapsedMoments.contains(item.id)
+                                        ? 'Expandir música'
+                                        : 'Recolher música',
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                     const Divider(height: 24),
                     if (song == null)
@@ -237,7 +268,7 @@ class _PerformanceScreenState extends ConsumerState<PerformanceScreen>
                             : 'A música selecionada não está disponível offline.',
                         style: Theme.of(context).textTheme.bodyLarge,
                       )
-                    else
+                    else if (!_collapsedMoments.contains(item.id))
                       CifraView(
                         song: song.conteudoJson,
                         lyricFontSize: _fontSize,

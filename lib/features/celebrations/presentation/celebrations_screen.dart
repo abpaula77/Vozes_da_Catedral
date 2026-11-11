@@ -706,6 +706,8 @@ class _SongPickerDialog extends StatefulWidget {
 
 class _SongPickerDialogState extends State<_SongPickerDialog> {
   MomentoLiturgico? _momentFilter;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -714,8 +716,14 @@ class _SongPickerDialogState extends State<_SongPickerDialog> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final songs =
+    final momentSongs =
         widget.songs
             .where(
               (song) =>
@@ -729,6 +737,26 @@ class _SongPickerDialogState extends State<_SongPickerDialog> {
             final bMatches = b.momentosLiturgicos.contains(_momentFilter);
             return (aMatches == bMatches) ? 0 : (aMatches ? -1 : 1);
           });
+    final query =
+        _normalizeSongSearch(
+          _searchQuery,
+        ).split(RegExp(r'\s+')).where((word) => word.isNotEmpty).toList();
+    final songs =
+        query.isEmpty
+            ? momentSongs
+            : momentSongs.where((song) {
+              final description = _normalizeSongSearch(
+                [
+                  song.titulo,
+                  song.tomOriginal,
+                  song.bpm?.toString(),
+                  ...song.categorias,
+                  ...song.momentosLiturgicos.map((moment) => moment.label),
+                  song.conteudoRaw,
+                ].whereType<String>().join(' '),
+              );
+              return query.any(description.contains);
+            }).toList();
     return AlertDialog(
       title: const Text('Selecionar música'),
       content: SizedBox(
@@ -761,6 +789,30 @@ class _SongPickerDialogState extends State<_SongPickerDialog> {
                 ],
               ),
             ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Buscar música',
+                hintText: 'Digite qualquer palavra da música',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon:
+                    _searchQuery.isEmpty
+                        ? null
+                        : IconButton(
+                          tooltip: 'Limpar busca',
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        ),
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value.trim()),
+            ),
+            const SizedBox(height: 8),
             Flexible(
               child: ListView(
                 shrinkWrap: true,
@@ -781,7 +833,7 @@ class _SongPickerDialogState extends State<_SongPickerDialog> {
                     const Padding(
                       padding: EdgeInsets.all(16),
                       child: Text(
-                        'Nenhuma música classificada para este momento.',
+                        'Nenhuma música encontrada para esta busca e momento.',
                       ),
                     ),
                   for (final song in songs)
@@ -808,6 +860,39 @@ class _SongPickerDialogState extends State<_SongPickerDialog> {
       ],
     );
   }
+}
+
+String _normalizeSongSearch(String value) {
+  const replacements = {
+    'á': 'a',
+    'à': 'a',
+    'â': 'a',
+    'ã': 'a',
+    'ä': 'a',
+    'é': 'e',
+    'è': 'e',
+    'ê': 'e',
+    'ë': 'e',
+    'í': 'i',
+    'ì': 'i',
+    'î': 'i',
+    'ï': 'i',
+    'ó': 'o',
+    'ò': 'o',
+    'ô': 'o',
+    'õ': 'o',
+    'ö': 'o',
+    'ú': 'u',
+    'ù': 'u',
+    'û': 'u',
+    'ü': 'u',
+    'ç': 'c',
+  };
+  var normalized = value.toLowerCase();
+  for (final entry in replacements.entries) {
+    normalized = normalized.replaceAll(entry.key, entry.value);
+  }
+  return normalized;
 }
 
 class _NewCelebration {

@@ -1,8 +1,46 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vozes_da_catedral/features/songs/domain/song_model.dart';
 import 'package:vozes_da_catedral/features/songs/domain/song_parser.dart';
 
 void main() {
+  test('parses a song with chords and liturgical moment metadata', () {
+    const raw = '''
+[TITULO]: Canção de teste
+[TOM]: D
+[MOMENTO]: consagracao
+
+[ESTROFE 1]
+D          A
+Linha de teste
+G          D
+Outra linha de teste
+
+[REFRAO]
+G          D
+Refrão de teste
+''';
+
+    final song = SongParser.parse(raw);
+
+    expect(song.titulo, 'Canção de teste');
+    expect(song.tomOriginal, 'D');
+    expect(song.momentosLiturgicos.map((moment) => moment.name), [
+      'consagracao',
+    ]);
+    expect(
+      jsonDecode(
+        jsonEncode(
+          song.momentosLiturgicos.map((moment) => moment.name).toList(),
+        ),
+      ),
+      ['consagracao'],
+    );
+    expect(song.secoes, hasLength(2));
+    expect(song.secoes.first.linhas.first.cifra, 'D          A');
+  });
+
   test('parses the documented TXT song format', () {
     const raw = '''
 [TITULO]: Nome da música

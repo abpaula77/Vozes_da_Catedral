@@ -54,6 +54,14 @@ final musicasSyncAtProvider = StreamProvider.family<DateTime?, String>((
   return ref.watch(databaseProvider).watchMusicasSyncAt(grupoId);
 });
 
+class SongEditResult {
+  final String? syncWarning;
+
+  const SongEditResult({this.syncWarning});
+
+  bool get isSynced => syncWarning == null;
+}
+
 /// Service for song CRUD, import and sync
 class SongsService {
   final Ref _ref;
@@ -95,7 +103,9 @@ class SongsService {
         bpm: drift.Value(content.bpm),
         categorias: drift.Value(jsonEncode(content.categorias)),
         momentosLiturgicos: drift.Value(
-          jsonEncode(content.momentosLiturgicos.map((moment) => moment.name)),
+          jsonEncode(
+            content.momentosLiturgicos.map((moment) => moment.name).toList(),
+          ),
         ),
         conteudoRaw: raw,
         conteudoJson: jsonEncode(content.toJson()),
@@ -104,6 +114,84 @@ class SongsService {
     );
 
     return content.titulo;
+  }
+
+  /// Save edited song text locally and update its published copy when possible.
+  Future<SongEditResult> updateMusica({
+    required String musicaId,
+    required String conteudoRaw,
+  }) async {
+    final local = await _db.getMusica(musicaId);
+    if (local == null) {
+      throw StateError('Música não encontrada no banco local.');
+    }
+
+    final content = SongParser.parse(conteudoRaw);
+    final updatedAt = DateTime.now();
+    await _db.upsertMusica(
+      MusicasLocalCompanion.insert(
+        id: local.id,
+        grupoId: local.grupoId,
+        titulo: content.titulo,
+        tomOriginal: drift.Value(content.tomOriginal),
+        bpm: drift.Value(content.bpm),
+        categorias: drift.Value(jsonEncode(content.categorias)),
+        momentosLiturgicos: drift.Value(
+          jsonEncode(
+            content.momentosLiturgicos.map((moment) => moment.name).toList(),
+          ),
+        ),
+        conteudoRaw: conteudoRaw,
+        conteudoJson: jsonEncode(content.toJson()),
+        updatedAt: updatedAt,
+      ),
+    );
+
+    if (!SongId.isUuid(local.id)) {
+      return const SongEditResult(
+        syncWarning: 'A música precisa ser publicada no grupo.',
+      );
+    }
+
+    try {
+      final updated =
+          await _supabase
+                  .from('musicas')
+                  .update({
+                    'titulo': content.titulo,
+                    'tom_original': content.tomOriginal,
+                    'bpm': content.bpm,
+                    'categorias': content.categorias,
+                    'momentos_liturgicos':
+                        content.momentosLiturgicos
+                            .map((moment) => moment.name)
+                            .toList(),
+                    'conteudo_raw': conteudoRaw,
+                    'conteudo_json': content.toJson(),
+                    'updated_at': updatedAt.toUtc().toIso8601String(),
+                  })
+                  .eq('id', local.id)
+                  .eq('grupo_id', local.grupoId)
+                  .select('id')
+                  .maybeSingle()
+              as Map<String, dynamic>?;
+
+      if (updated == null) {
+        return const SongEditResult(
+          syncWarning:
+              'Alteração salva neste dispositivo, mas a música ainda não '
+              'foi publicada ou você não tem permissão para editá-la.',
+        );
+      }
+      return const SongEditResult();
+    } catch (error) {
+      return SongEditResult(
+        syncWarning:
+            'Alteração salva neste dispositivo, mas não foi sincronizada. '
+            'Verifique sua conexão e publique as músicas do grupo. Detalhe: '
+            '$error',
+      );
+    }
   }
 
   /// Delete a song from local DB

@@ -17,8 +17,9 @@ O app permite que o **Coordenador** monte a estrutura completa de uma celebraç�
 ## Funcionalidades do MVP
 
 - 🔐 **Autenticação** — Google OAuth e e-mail/senha via Supabase
-- 👥 **Grupos** — Coordenador gerencia membros; membros acessam no modo leitura
+- 👥 **Grupos** — Coordenador adiciona membros por e-mail ou selecionando usuários cadastrados; membros acessam no modo leitura
 - 🎵 **Hinário** — Importação de músicas via arquivo `.txt` com cifras e letras
+- ✏️ **Edição de músicas** — Coordenadores podem editar no app o texto `.txt`, incluindo cifras, letra e metadados; alterações são sincronizadas com o grupo quando possível
 - ✝️ **Classificação litúrgica** — Associação de músicas a momentos do Rito Romano, com filtros no hinário e no montador
 - ✝️ **Montador de Celebração** — Estrutura do Rito Romano com slots para cada momento litúrgico
 - 🔁 **Compartilhamento de celebrações** — Coordenadores podem copiar uma celebração configurada para outro grupo; a cópia é independente e leva as músicas usadas para o hinário de destino
@@ -113,9 +114,9 @@ cp .env.example .env
 flutter run
 ```
 
-Em projetos Supabase já configurados, aplique
-`supabase/migrations/20261110_copy_celebration_between_groups.sql` no SQL Editor
-do Supabase para habilitar o compartilhamento de celebrações.
+Em projetos Supabase já configurados, aplique as migrations em
+`supabase/migrations/` no SQL Editor do Supabase para habilitar as
+funcionalidades correspondentes.
 
 ---
 

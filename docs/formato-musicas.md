@@ -2,6 +2,11 @@
 
 O hinário importa arquivos de texto simples em UTF-8 com extensão `.txt`. O formato é interpretado pelo parser do app; os nomes dos campos e das seções devem seguir os exemplos abaixo.
 
+Coordenadores também podem editar uma música diretamente no app. O editor usa
+este mesmo formato e valida o conteúdo antes de salvar. Se não houver conexão
+com o Supabase, a alteração fica salva no dispositivo; conecte-se e publique as
+músicas do grupo para sincronizá-la.
+
 ## Modelo
 
 ```text

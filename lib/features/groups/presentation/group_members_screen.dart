@@ -100,22 +100,31 @@ class GroupMembersScreen extends ConsumerWidget {
   Future<void> _addMember(BuildContext context, WidgetRef ref) async {
     final invitation = await showDialog<_MemberInvitation>(
       context: context,
-      builder: (_) => const _AddMemberDialog(),
+      builder: (_) => _AddMemberDialog(grupoId: grupoId),
     );
     if (invitation == null || !context.mounted) return;
 
     try {
-      await ref
-          .read(gruposServiceProvider)
-          .addMembro(
-            grupoId: grupoId,
-            email: invitation.email,
-            papel: invitation.papel.value,
-          );
+      final service = ref.read(gruposServiceProvider);
+      if (invitation.userId case final userId?) {
+        await service.addMembroPorId(
+          grupoId: grupoId,
+          userId: userId,
+          papel: invitation.papel.value,
+        );
+      } else {
+        await service.addMembro(
+          grupoId: grupoId,
+          email: invitation.email!,
+          papel: invitation.papel.value,
+        );
+      }
       ref.invalidate(membrosGrupoProvider(grupoId));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${invitation.email} adicionado ao grupo.')),
+          SnackBar(
+            content: Text('${invitation.displayName} adicionado ao grupo.'),
+          ),
         );
       }
     } catch (error) {
@@ -187,53 +196,89 @@ class _RoleLabel extends StatelessWidget {
 }
 
 class _MemberInvitation {
-  final String email;
+  final String? email;
+  final String? userId;
+  final String displayName;
   final PapelGrupo papel;
 
-  const _MemberInvitation(this.email, this.papel);
+  const _MemberInvitation.byEmail(this.email, this.displayName, this.papel)
+    : userId = null;
+
+  const _MemberInvitation.byUser(this.userId, this.displayName, this.papel)
+    : email = null;
 }
 
-class _AddMemberDialog extends StatefulWidget {
-  const _AddMemberDialog();
+enum _AddMemberMethod { email, registeredUser }
+
+class _AddMemberDialog extends ConsumerStatefulWidget {
+  final String grupoId;
+
+  const _AddMemberDialog({required this.grupoId});
 
   @override
-  State<_AddMemberDialog> createState() => _AddMemberDialogState();
+  ConsumerState<_AddMemberDialog> createState() => _AddMemberDialogState();
 }
 
-class _AddMemberDialogState extends State<_AddMemberDialog> {
+class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _searchController = TextEditingController();
   PapelGrupo _papel = PapelGrupo.membro;
+  _AddMemberMethod _method = _AddMemberMethod.email;
+  Future<List<UsuarioDisponivelGrupoModel>>? _usuariosFuture;
+  String _query = '';
 
   @override
   void dispose() {
     _emailController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _selectMethod(_AddMemberMethod method) {
+    setState(() {
+      _method = method;
+      if (method == _AddMemberMethod.registeredUser) {
+        _usuariosFuture ??= ref
+            .read(gruposServiceProvider)
+            .getUsuariosDisponiveis(widget.grupoId);
+      }
+    });
+  }
+
+  void _retryUsers() {
+    setState(() {
+      _usuariosFuture = ref
+          .read(gruposServiceProvider)
+          .getUsuariosDisponiveis(widget.grupoId);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Adicionar membro'),
-      content: Form(
-        key: _formKey,
+      content: SizedBox(
+        width: 480,
+        height: 440,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextFormField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'E-mail',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                final email = value?.trim() ?? '';
-                if (email.isEmpty || !email.contains('@')) {
-                  return 'Informe um e-mail válido.';
-                }
-                return null;
-              },
+            SegmentedButton<_AddMemberMethod>(
+              segments: const [
+                ButtonSegment(
+                  value: _AddMemberMethod.email,
+                  icon: Icon(Icons.email_outlined),
+                  label: Text('Por e-mail'),
+                ),
+                ButtonSegment(
+                  value: _AddMemberMethod.registeredUser,
+                  icon: Icon(Icons.people_outline),
+                  label: Text('Usuário cadastrado'),
+                ),
+              ],
+              selected: {_method},
+              onSelectionChanged: (selection) => _selectMethod(selection.first),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<PapelGrupo>(
@@ -257,6 +302,8 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
                 if (papel != null) setState(() => _papel = papel);
               },
             ),
+            const SizedBox(height: 16),
+            Expanded(child: _methodContent()),
           ],
         ),
       ),
@@ -265,17 +312,142 @@ class _AddMemberDialogState extends State<_AddMemberDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        FilledButton(
-          onPressed: () {
-            if (!_formKey.currentState!.validate()) return;
-            Navigator.pop(
-              context,
-              _MemberInvitation(_emailController.text.trim(), _papel),
-            );
-          },
-          child: const Text('Adicionar'),
-        ),
+        if (_method == _AddMemberMethod.email)
+          FilledButton(
+            onPressed: () {
+              if (!_formKey.currentState!.validate()) return;
+              final email = _emailController.text.trim();
+              Navigator.pop(
+                context,
+                _MemberInvitation.byEmail(email, email, _papel),
+              );
+            },
+            child: const Text('Adicionar'),
+          ),
       ],
+    );
+  }
+
+  Widget _methodContent() {
+    if (_method == _AddMemberMethod.email) {
+      return Form(
+        key: _formKey,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: TextFormField(
+            controller: _emailController,
+            decoration: const InputDecoration(
+              labelText: 'E-mail',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              final email = value?.trim() ?? '';
+              if (email.isEmpty || !email.contains('@')) {
+                return 'Informe um e-mail válido.';
+              }
+              return null;
+            },
+          ),
+        ),
+      );
+    }
+
+    final usersFuture = _usuariosFuture;
+    if (usersFuture == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return FutureBuilder<List<UsuarioDisponivelGrupoModel>>(
+      future: usersFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Erro ao carregar usuários: ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+                TextButton(
+                  onPressed: _retryUsers,
+                  child: const Text('Tentar novamente'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final users = snapshot.data ?? const <UsuarioDisponivelGrupoModel>[];
+        final query = _query.toLowerCase();
+        final filteredUsers =
+            users
+                .where(
+                  (user) =>
+                      user.nome.toLowerCase().contains(query) ||
+                      user.email.toLowerCase().contains(query),
+                )
+                .toList();
+
+        if (users.isEmpty) {
+          return const Center(
+            child: Text('Não há outros usuários cadastrados para adicionar.'),
+          );
+        }
+
+        return Column(
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Buscar usuário',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => setState(() => _query = value.trim()),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child:
+                  filteredUsers.isEmpty
+                      ? const Center(child: Text('Nenhum usuário encontrado.'))
+                      : ListView.separated(
+                        itemCount: filteredUsers.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final user = filteredUsers[index];
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              child: Text(
+                                user.nome.isEmpty
+                                    ? '?'
+                                    : user.nome[0].toUpperCase(),
+                              ),
+                            ),
+                            title: Text(user.nome),
+                            subtitle: Text(user.email),
+                            trailing: const Icon(Icons.person_add_alt_1),
+                            onTap:
+                                () => Navigator.pop(
+                                  context,
+                                  _MemberInvitation.byUser(
+                                    user.id,
+                                    user.nome,
+                                    _papel,
+                                  ),
+                                ),
+                          );
+                        },
+                      ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

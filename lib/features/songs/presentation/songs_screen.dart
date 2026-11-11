@@ -180,6 +180,10 @@ class SongsScreen extends ConsumerWidget {
                           isCoordenador
                               ? () => _editMoments(context, ref, musica)
                               : null,
+                      onEdit:
+                          isCoordenador
+                              ? () => _editMusica(context, ref, musica)
+                              : null,
                       onDelete:
                           isCoordenador
                               ? () => _deleteMusica(context, ref, musica)
@@ -231,6 +235,52 @@ class SongsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro ao classificar música: $error')),
+        );
+      }
+    }
+  }
+
+  Future<void> _editMusica(
+    BuildContext context,
+    WidgetRef ref,
+    SongModel musica,
+  ) async {
+    final conteudoRaw = await showDialog<String>(
+      context: context,
+      builder: (_) => _SongEditorDialog(song: musica),
+    );
+    if (conteudoRaw == null || !context.mounted) return;
+
+    try {
+      final result = await ref
+          .read(songsServiceProvider)
+          .updateMusica(musicaId: musica.id, conteudoRaw: conteudoRaw);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.isSynced
+                ? 'Música salva e sincronizada.'
+                : result.syncWarning!,
+          ),
+          duration:
+              result.isSynced
+                  ? const Duration(seconds: 3)
+                  : const Duration(seconds: 8),
+        ),
+      );
+    } on SongParseException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro no conteúdo da música: ${error.message}'),
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao salvar música: $error')),
         );
       }
     }
@@ -462,6 +512,133 @@ class _SongMomentsDialogState extends State<_SongMomentsDialog> {
   }
 }
 
+class _SongEditorDialog extends StatefulWidget {
+  final SongModel song;
+
+  const _SongEditorDialog({required this.song});
+
+  @override
+  State<_SongEditorDialog> createState() => _SongEditorDialogState();
+}
+
+class _SongEditorDialogState extends State<_SongEditorDialog> {
+  late final TextEditingController _controller;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: _songTextForEditing(widget.song));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    try {
+      SongParser.parse(_controller.text);
+      Navigator.pop(context, _controller.text);
+    } on SongParseException catch (error) {
+      setState(() => _error = error.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Dialog.fullscreen(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Editar música', style: theme.textTheme.titleLarge),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            tooltip: 'Cancelar',
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Edite título, tom, BPM, categorias, momentos, cifras e letra '
+                'no formato .txt.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              if (_error != null) ...[
+                Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+                const SizedBox(height: 8),
+              ],
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  expands: true,
+                  minLines: null,
+                  maxLines: null,
+                  keyboardType: TextInputType.multiline,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: const TextStyle(
+                    fontFamily: 'RobotoMono',
+                    fontSize: 14,
+                  ),
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                  onChanged: (_) {
+                    if (_error != null) setState(() => _error = null);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: SafeArea(
+          minimum: const EdgeInsets.all(16),
+          child: FilledButton.icon(
+            onPressed: _save,
+            icon: const Icon(Icons.save_outlined),
+            label: const Text('Salvar alterações'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _songTextForEditing(SongModel song) {
+  final lines =
+      song.conteudoRaw
+          .split('\n')
+          .where(
+            (line) =>
+                !RegExp(
+                  r'^\s*\[MOMENTOS?\]:',
+                  caseSensitive: false,
+                ).hasMatch(line),
+          )
+          .toList();
+  final sectionIndex = lines.indexWhere(
+    (line) => RegExp(r'^\s*\[[^\]]+\]\s*$').hasMatch(line),
+  );
+  final momentos = song.momentosLiturgicos;
+  final header =
+      momentos.isEmpty
+          ? null
+          : '[MOMENTO]: ${momentos.map((moment) => moment.name).join(', ')}';
+
+  if (header != null) {
+    lines.insert(sectionIndex < 0 ? lines.length : sectionIndex, header);
+  }
+  return lines.join('\n');
+}
+
 class _CatalogSongSelection {
   final SongModel? song;
   final bool addAll;
@@ -649,6 +826,7 @@ class _MusicaCard extends StatelessWidget {
   final SongModel musica;
   final bool isCoordenador;
   final VoidCallback? onClassify;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback onTap;
 
@@ -657,6 +835,7 @@ class _MusicaCard extends StatelessWidget {
     required this.isCoordenador,
     required this.onTap,
     this.onClassify,
+    this.onEdit,
     this.onDelete,
   });
 
@@ -750,6 +929,13 @@ class _MusicaCard extends StatelessWidget {
                   icon: const Icon(Icons.category_outlined),
                   tooltip: 'Classificar momentos litúrgicos',
                   onPressed: onClassify,
+                  iconSize: 20,
+                ),
+              if (onEdit != null)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Editar música, cifras e letra',
+                  onPressed: onEdit,
                   iconSize: 20,
                 ),
               if (onDelete != null)
