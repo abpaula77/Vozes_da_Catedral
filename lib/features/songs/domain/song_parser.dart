@@ -59,7 +59,7 @@ class SongParser {
     final currentLines = <SongLine>[];
     String? pendingChordLine;
 
-    void _flushSection() {
+    void flushSection() {
       if (currentSectionType != null) {
         // flush any dangling chord line as a chord-only line
         if (pendingChordLine != null) {
@@ -132,7 +132,7 @@ class SongParser {
         if (_sectionTags.contains(tag) ||
             tag.startsWith('ESTROFE') ||
             tag.startsWith('VERSO')) {
-          _flushSection();
+          flushSection();
           currentSectionType = tag;
           continue;
         }
@@ -163,7 +163,7 @@ class SongParser {
       }
     }
 
-    _flushSection();
+    flushSection();
 
     if (titulo == null || titulo.isEmpty) {
       throw SongParseException(

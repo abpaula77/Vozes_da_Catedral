@@ -15,7 +15,7 @@ class SupabaseConfig {
 
   /// Supabase publishable (anon) key — safe for client-side use.
   /// Access is controlled server-side via Row Level Security (RLS).
-  static const String anonKey = String.fromEnvironment(
+  static const String publishableKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
     defaultValue:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wdWpyb3lvY2Nsb2JqcnBlYWVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxNjEyMTUsImV4cCI6MjEwOTczNzIxNX0.pDXIzq9IiPHGy5-sDPlVc1jfmToebSjAVmLd1lUko7o',
