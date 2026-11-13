@@ -31,7 +31,7 @@ begin
   on conflict (id) do nothing;
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = '';
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
@@ -136,7 +136,7 @@ returns boolean as $$
     select 1 from public.membros_grupo
     where grupo_id = p_grupo_id and user_id = auth.uid() and papel = 'coordenador'
   );
-$$ language sql security definer stable;
+$$ language sql security definer stable set search_path = '';
 
 -- Create a group and its initial coordinator membership atomically.
 create or replace function public.create_group(
@@ -244,6 +244,7 @@ create or replace function public.add_group_member_by_email(
   p_email text,
   p_papel text default 'membro'
 )
+returns void
 language plpgsql
 security definer
 set search_path = ''
