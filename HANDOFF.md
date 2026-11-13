@@ -81,12 +81,13 @@ Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 t
 - **O APK 0.1.0 (anterior ao #34) não funciona mais** com essa restrição (lia `email` e fazia `upsert` em `users`). Todo usuário Android precisa do 0.1.1 ou superior.
 - Advisor de segurança: restam só avisos esperados de RPCs `security definer` executáveis por `authenticated` (necessário para o app e para as policies) e a proteção de senhas vazadas desligada.
 
+- **Proteção contra senhas vazadas (HaveIBeenPwned): risco aceito.** Disponível só no plano Pro; a organização está no Free. O aviso `auth_leaked_password_protection` do advisor continua aparecendo e é esperado. Alternativa disponível no Free (não aplicada): tamanho mínimo e caracteres obrigatórios em Sign In / Providers → Email; senhas antigas fora da regra passam a receber `WeakPasswordError` no login.
+
 ### Pendências importantes
-1. Ligar **proteção contra senhas vazadas** no painel do Supabase (Authentication, Passwords). Não é possível pelo MCP.
-2. Aplicar/validar o `schema.sql` em um banco vazio (não testado).
-3. As migrations do repositório não correspondem 1:1 ao histórico do Supabase (`list_migrations` mostra só as aplicadas via MCP; parte foi aplicada pelo SQL Editor). O `schema.sql` é a referência do estado final.
-4. Testar com duas contas: sincronizar celebração, convidar membro e tentar remover o único coordenador.
-5. Distribuir o APK 0.1.1 aos demais usuários Android (`build\app\outputs\flutter-apk\app-release.apk`).
+1. Aplicar/validar o `schema.sql` em um banco vazio (não testado).
+2. As migrations do repositório não correspondem 1:1 ao histórico do Supabase (`list_migrations` mostra só as aplicadas via MCP; parte foi aplicada pelo SQL Editor). O `schema.sql` é a referência do estado final.
+3. Testar com duas contas: sincronizar celebração, convidar membro e tentar remover o único coordenador.
+4. Distribuir o APK 0.1.1 aos demais usuários Android (`build\app\outputs\flutter-apk\app-release.apk`).
 
 ---
 
