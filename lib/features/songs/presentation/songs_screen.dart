@@ -11,7 +11,7 @@ import '../domain/song_parser.dart';
 final _songMomentFilterProvider =
     StateProvider.family<MomentoLiturgico?, String>((ref, grupoId) => null);
 
-class SongsScreen extends ConsumerWidget {
+class SongsScreen extends ConsumerStatefulWidget {
   final String grupoId;
   final bool isCoordenador;
 
@@ -22,7 +22,25 @@ class SongsScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SongsScreen> createState() => _SongsScreenState();
+}
+
+class _SongsScreenState extends ConsumerState<SongsScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  String get grupoId => widget.grupoId;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final grupoId = widget.grupoId;
+    final isCoordenador = widget.isCoordenador;
     final musicasAsync = ref.watch(musicasByGrupoProvider(grupoId));
     final syncAtAsync = ref.watch(musicasSyncAtProvider(grupoId));
     final selectedMoment = ref.watch(_songMomentFilterProvider(grupoId));
@@ -59,6 +77,29 @@ class SongsScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Pesquisar música pelo nome',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon:
+                    _searchQuery.isEmpty
+                        ? null
+                        : IconButton(
+                          tooltip: 'Limpar pesquisa',
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        ),
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value.trim()),
+            ),
+          ),
           SizedBox(
             height: 56,
             child: ListView(
@@ -98,16 +139,17 @@ class SongsScreen extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Erro: $e')),
               data: (musicas) {
+                final query = _searchQuery.toLowerCase();
                 final filteredMusicas =
-                    selectedMoment == null
-                        ? musicas
-                        : musicas
-                            .where(
-                              (song) => song.momentosLiturgicos.contains(
-                                selectedMoment,
-                              ),
-                            )
-                            .toList();
+                    musicas.where((song) {
+                      final matchesMoment =
+                          selectedMoment == null ||
+                          song.momentosLiturgicos.contains(selectedMoment);
+                      final matchesQuery = song.titulo.toLowerCase().contains(
+                        query,
+                      );
+                      return matchesMoment && matchesQuery;
+                    }).toList();
                 if (musicas.isEmpty) {
                   return Center(
                     child: Column(
@@ -146,21 +188,23 @@ class SongsScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Nenhuma música classificada para '
-                          '${selectedMoment!.label}.',
+                          _searchQuery.isNotEmpty
+                              ? 'Nenhuma música encontrada com esses filtros.'
+                              : 'Nenhuma música classificada para '
+                                  '${selectedMoment!.label}.',
                           textAlign: TextAlign.center,
                         ),
                         TextButton(
-                          onPressed:
-                              () =>
-                                  ref
-                                      .read(
-                                        _songMomentFilterProvider(
-                                          grupoId,
-                                        ).notifier,
-                                      )
-                                      .state = null,
-                          child: const Text('Mostrar todas'),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                            ref
+                                .read(
+                                  _songMomentFilterProvider(grupoId).notifier,
+                                )
+                                .state = null;
+                          },
+                          child: const Text('Limpar filtros'),
                         ),
                       ],
                     ),

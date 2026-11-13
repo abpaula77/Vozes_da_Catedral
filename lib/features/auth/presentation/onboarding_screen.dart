@@ -22,12 +22,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       final user = supabase.auth.currentUser;
       if (user == null) return;
       await ref.read(authServiceProvider).createOrUpdateProfile(
-            userId: user.id,
             nome: user.userMetadata?['nome'] ??
                 user.userMetadata?['full_name'] ??
                 user.email?.split('@').first ??
                 'Usuário',
-            email: user.email ?? '',
             foto: user.userMetadata?['avatar_url'],
             papel: _papel,
           );

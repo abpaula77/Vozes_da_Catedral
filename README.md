@@ -17,7 +17,7 @@ O app permite que o **Coordenador** monte a estrutura completa de uma celebraç�
 ## Funcionalidades do MVP
 
 - 🔐 **Autenticação** — Google OAuth e e-mail/senha via Supabase
-- 👥 **Grupos** — Coordenador adiciona membros por e-mail ou selecionando usuários cadastrados; membros acessam no modo leitura
+- 👥 **Grupos** — Coordenador adiciona membros por e-mail; emails de outros usuários não são exibidos no diretório de membros
 - 🎵 **Hinário** — Importação de músicas via arquivo `.txt` com cifras e letras
 - ✏️ **Edição de músicas** — Coordenadores podem editar no app o texto `.txt`, incluindo cifras, letra e metadados; alterações são sincronizadas com o grupo quando possível
 - ✝️ **Classificação litúrgica** — Associação de músicas a momentos do Rito Romano, com filtros no hinário e no montador

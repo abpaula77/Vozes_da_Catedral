@@ -61,13 +61,11 @@ class GrupoModel {
 class MembroGrupoModel {
   final String userId;
   final String nome;
-  final String email;
   final PapelGrupo papel;
 
   const MembroGrupoModel({
     required this.userId,
     required this.nome,
-    required this.email,
     required this.papel,
   });
 }
@@ -76,18 +74,12 @@ class MembroGrupoModel {
 class UsuarioDisponivelGrupoModel {
   final String id;
   final String nome;
-  final String email;
 
-  const UsuarioDisponivelGrupoModel({
-    required this.id,
-    required this.nome,
-    required this.email,
-  });
+  const UsuarioDisponivelGrupoModel({required this.id, required this.nome});
 
   factory UsuarioDisponivelGrupoModel.fromJson(Map<String, dynamic> json) =>
       UsuarioDisponivelGrupoModel(
         id: json['id'] as String,
         nome: json['nome'] as String,
-        email: json['email'] as String,
       );
 }

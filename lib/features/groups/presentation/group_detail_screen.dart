@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
+import '../../celebrations/presentation/celebrations_screen.dart';
 import '../../songs/presentation/songs_screen.dart';
 import '../data/groups_provider.dart';
 import '../domain/group_model.dart';
@@ -85,50 +85,11 @@ class _GroupDetailViewState extends ConsumerState<_GroupDetailView>
         controller: _tabController,
         children: [
           SongsScreen(grupoId: grupo.id, isCoordenador: grupo.isCoordenador),
-          _CelebracoesTab(
+          CelebrationsScreen(
             grupoId: grupo.id,
             isCoordenador: grupo.isCoordenador,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CelebracoesTab extends StatelessWidget {
-  final String grupoId;
-  final bool isCoordenador;
-
-  const _CelebracoesTab({required this.grupoId, required this.isCoordenador});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.event_available_outlined, size: 56),
-            const SizedBox(height: 16),
-            Text(
-              'Organize os cantos das celebrações do grupo.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed:
-                  () => context.push(
-                    AppRoutes.celebrationsPath(grupoId),
-                    extra: isCoordenador,
-                  ),
-              icon: const Icon(Icons.event),
-              label: const Text('Abrir celebrações'),
-            ),
-          ],
-        ),
       ),
     );
   }
