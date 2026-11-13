@@ -165,9 +165,16 @@ flutter build web --release
 ```
 
 O site estará em `build/web`. Para publicar na Vercel, instale e autentique o
-CLI (`npm install --global vercel` e `vercel login`) e execute `vercel --prod`
-na raiz do projeto. O `vercel.json` aponta para `build/web` e redireciona rotas
-do app para a entrada Flutter.
+CLI (`npm install --global vercel` e `vercel login`) e publique somente o build:
+
+```powershell
+vercel deploy .\build\web --prod
+```
+
+A configuração da Vercel fica em `web/vercel.json` (cabeçalhos de segurança,
+CSP e redirecionamento de rotas para a entrada Flutter). O `flutter build web`
+copia esse arquivo para `build/web`, que é a raiz do deploy. Depois de publicar,
+confira os cabeçalhos da resposta em produção.
 
 O banco local Drift na Web usa `web/sqlite3.wasm` e `web/drift_worker.js`.
 Esses arquivos devem acompanhar a versão de `drift` e `sqlite3` definida em
