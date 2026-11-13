@@ -1,4 +1,12 @@
--- Issue #22: security definer helper must not depend on the caller's search_path.
+-- Issue #22: security definer helpers must not depend on the caller's search_path.
+create or replace function public.is_group_member(p_grupo_id uuid)
+returns boolean as $$
+  select exists (
+    select 1 from public.membros_grupo
+    where grupo_id = p_grupo_id and user_id = auth.uid()
+  );
+$$ language sql security definer stable set search_path = '';
+
 create or replace function public.is_group_coordinator(p_grupo_id uuid)
 returns boolean as $$
   select exists (
