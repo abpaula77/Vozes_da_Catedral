@@ -13,8 +13,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit na `master`:** `c714354` — merge do PR #38 (`vercel.json` dentro de `build/web`)
-**Produção (13/11/2026):** Web publicado na Vercel a partir de `c714354`; APK release 0.1.1 (code 2) instalado no Samsung de teste
+**Último commit de código na `master`:** `5e954e5` — merge do PR #43 (convite só por e-mail, #24)
+**Produção (13/11/2026):** Web publicado na Vercel a partir de `5e954e5`; APK release 0.1.1 (code 2) do mesmo commit instalado no Samsung de teste
 
 **Fluxo de trabalho a partir de 12/11/2026:** uma issue por melhoria e uma branch por issue (`fix/<n>-<nome>`), com PR próprio. Não commitar direto na `master`.
 
@@ -46,7 +46,7 @@ Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 t
 |-------|------|--------|
 | #22 | `schema.sql` desatualizado + `search_path` das funções `security definer` | ✅ Fechada (PR #35). Migration aplicada |
 | #23 | RLS: autor imutável, último coordenador, música do mesmo grupo, revogar `anon` | ✅ Fechada (PR #36). Migration aplicada |
-| #24 | `list_group_invitees` permite enumerar todos os usuários (risco médio) | Aberta, sem branch. Muda o fluxo de convite: combinar com o usuário antes |
+| #24 | `list_group_invitees` permite enumerar todos os usuários (risco médio) | ✅ Fechada (PR #43). Aba "Usuário cadastrado" removida; convite só por e-mail exato. RPC removida do banco após publicar Web + APK. Convite validado pelo usuário no Web |
 | #25 | Cabeçalhos de segurança Web (CSP etc.) | ✅ Fechada (PRs #37 e #38). Validada em produção pelo usuário |
 | #26 | Android: `allowBackup`, deep link/App Links, assinatura de release | ✅ Fechada (PR #40). Backup desativado; release sem `key.properties` falha. App Links avaliado e não adotado (login usa PKCE). Login validado pelo usuário |
 | #27 | Política de direitos autorais do catálogo compartilhado | Aberta, sem branch (decisão do usuário) |
@@ -54,8 +54,19 @@ Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 t
 (#28 a #33 foram duplicatas e estão fechadas.)
 
 ### PRs e branches
-- Mergeados em `master`: **#34** (minimização de dados), **#35** (#22), **#36** (#23), **#37** e **#38** (#25), **#40** (#26), **#39** (este HANDOFF).
-- Restam #24 e #27. Proposta para a #24 (aguardando confirmação do usuário): remover a lista `list_group_invitees` e convidar só por e-mail exato (`add_group_member_by_email`).
+- Mergeados em `master`: **#34** (minimização de dados), **#35** (#22), **#36** (#23), **#37** e **#38** (#25), **#40** (#26), **#39** (HANDOFF), **#43** (#24).
+- Todos os riscos da varredura estão tratados. Resta a **#27** (decisão do usuário, não é código).
+- **Mudanças de banco que quebram builds antigos:** publique primeiro o Web e o APK novos, valide e só então aplique a migration (feito assim na restrição de e-mail e na #24). Use `Refs #<n>` no PR, em vez de `Closes`, quando a issue só fecha depois da migration.
+
+### Próximas features (decididas em 13/11/2026)
+- **#41 — Pedido de filiação a grupos.** Decisões do usuário:
+  1. Grupo aparece na busca só se o coordenador marcar **aberto a solicitações** (opt-in).
+  2. Recusado pode solicitar de novo após **7 dias**.
+  3. Coordenador vê **nome e foto** (se houver) do solicitante. `foto` continua sem SELECT direto em `public.users`; sai só pela RPC de solicitações.
+  4. **Sem notificação push**; contador de solicitações na tela de membros.
+  - Desenho proposto: coluna `grupos.aceita_solicitacoes`, tabela `solicitacoes_grupo`, RPCs `listar_grupos_abertos`, `solicitar_entrada`, `cancelar_solicitacao`, `listar_solicitacoes`, `decidir_solicitacao` (aprovação insere em `membros_grupo` de forma atômica). Detalhes na issue.
+  - Sugestão: começar por um **spec** (requisitos → design → tarefas) antes de implementar.
+- **#42 — Perfil de usuário e uso da foto.** Escopo aberto: definir quem pode ver a foto (membros do mesmo grupo? solicitantes?) e se haverá upload (Supabase Storage) além do `avatar_url` do Google. Encaixa junto ou logo depois da #41.
 
 ### Deploy Web (importante)
 - O deploy é `vercel deploy .\build\web --prod`, então a raiz do deploy é `build/web`.
@@ -72,7 +83,8 @@ Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 t
 - Outros usuários Android com APK de debug também precisam desinstalar uma vez (perdem o cache local; sincronizar antes).
 
 ### Estado do banco Supabase (validado via MCP em 13/11/2026)
-- As 10 funções `security definer` de `public` têm `search_path` vazio e `anon` sem `EXECUTE`.
+- As 9 funções `security definer` de `public` têm `search_path` vazio e `anon` sem `EXECUTE` (eram 10; `list_group_invitees` foi removida na #24).
+- Nenhuma RPC lista usuários cadastrados; membros entram por `add_group_member_by_email` (não revela se o e-mail existe).
 - Triggers ativos: `set_criado_por` (`musicas`, `celebracoes`) e `protect_last_coordinator` (`membros_grupo`).
 - `itens_celebracao` só aceita `musica_id` de música do mesmo grupo da celebração.
 - Contagens no momento da validação: 4 grupos, 9 membros, 211 músicas, 3 celebrações, 36 itens, 6 usuários.
@@ -399,7 +411,7 @@ adb devices
 4. Se o build funcionar, o app deve mostrar tela de splash → login
 5. Crie uma conta de teste no app → será redirecionado para onboarding
 6. **Lembre o usuário:** antes de testar grupos/músicas, precisa criar um grupo pelo app
-7. Todas as Tasks 1–11 estão concluídas, assim como #22, #23, #25, #26 e a restrição de e-mail. Continue pela seção **Varredura técnica e de segurança**: #24 e #27 (uma branch por issue).
+7. Todas as Tasks 1–11 estão concluídas, assim como a varredura de segurança (#22 a #26) e a restrição de e-mail. Próximos passos: spec da **#41** (pedido de filiação), depois **#42** (perfil/foto); a **#27** aguarda decisão do usuário. Uma branch por issue.
 
 > Para atualizar o GitHub Projects ao concluir cada task:
 > `gh issue close <NUMBER> --repo abpaula77/Vozes_da_Catedral --comment "Task concluída: <descrição>"`
