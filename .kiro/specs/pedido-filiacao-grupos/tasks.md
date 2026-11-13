@@ -85,7 +85,7 @@ Cada tarefa indica os requisitos que atende. As tarefas de banco vêm primeiro p
 
 - [x] 4.1 `dart format`, `flutter analyze` e `flutter test` limpos
 
-- [ ] 4.2 Commit e PR (`Refs #41`)
+- [x] 4.2 Commit e PR (`Refs #41`)
 
 - [ ] 4.3 Após aprovação: merge, deploy Web, APK novo no Samsung
   - Conferir cabeçalhos da Vercel e que a foto do Google carrega com a CSP
