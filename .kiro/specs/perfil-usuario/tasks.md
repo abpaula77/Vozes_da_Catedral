@@ -7,23 +7,23 @@ A migration é aditiva e pode ser aplicada antes do app. Cada tarefa indica os r
 
 ## 1. Banco de dados
 
-- [ ] 1.1 Criar `supabase/migrations/20261117_user_profile.sql`: bucket `avatars` privado (512 KB, JPEG/PNG/WebP) e as 4 policies de `storage.objects`
+- [x] 1.1 Criar `supabase/migrations/20261117_user_profile.sql`: bucket `avatars` privado (512 KB, JPEG/PNG/WebP) e as 4 policies de `storage.objects`
   - _Requisitos: 2.5, 4.3, 4.4, 4.5_
 
-- [ ] 1.2 Funções de foto: `_foto_valida`, `pode_ver_foto`, `definir_minha_foto`; `update_my_profile` passa a validar a foto; `grant select (foto)` em `users`
+- [x] 1.2 Funções de foto: `_foto_valida`, `pode_ver_foto`, `definir_minha_foto`; `update_my_profile` passa a validar a foto; `grant select (foto)` em `users`
   - _Requisitos: 2.1, 2.3, 2.4, 2.6, 3.1, 4.1, 4.2_
 
-- [ ] 1.3 `atualizar_meu_nome` (2 a 80 caracteres; cria o perfil no primeiro acesso)
+- [x] 1.3 `atualizar_meu_nome` (2 a 80 caracteres; cria o perfil no primeiro acesso)
   - _Requisitos: 1.3, 5.2_
 
-- [ ] 1.4 Exclusão: `grupos_impedindo_exclusao`, `excluir_minha_conta` (autoria para o coordenador mais antigo) e ajuste da trigger `set_criado_por` para a flag `app.reatribuir_autor`
+- [x] 1.4 Exclusão: `grupos_impedindo_exclusao`, `excluir_minha_conta` (autoria para o coordenador mais antigo) e ajuste da trigger `set_criado_por` para a flag `app.reatribuir_autor`
   - _Requisitos: 6.2–6.4_
 
-- [ ] 1.5 Escrever `supabase/tests/perfil_usuario.sql` com os cenários do design (exclusão em conta criada só para o teste)
+- [x] 1.5 Escrever `supabase/tests/perfil_usuario.sql` com os cenários do design (exclusão em conta criada só para o teste)
 
-- [ ] 1.6 Aplicar a migration, rodar os testes SQL e os advisors; conferir que os dados reais não mudaram
+- [x] 1.6 Aplicar a migration, rodar os testes SQL e os advisors; conferir que os dados reais não mudaram
 
-- [ ] 1.7 Atualizar `supabase/schema.sql`
+- [x] 1.7 Atualizar `supabase/schema.sql`
 
 ## 2. Dados e domínio (app)
 
