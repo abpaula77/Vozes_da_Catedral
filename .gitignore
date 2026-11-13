@@ -49,3 +49,7 @@ app.*.map.json
 .vercel
 .env*
 /docs/musicas/
+
+# Local MCP configuration (Supabase MCP has write access to production)
+.kiro/settings/
+.vscode/mcp.json
