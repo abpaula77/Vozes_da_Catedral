@@ -69,17 +69,3 @@ class MembroGrupoModel {
     required this.papel,
   });
 }
-
-/// A registered user who is not yet a member of the selected group.
-class UsuarioDisponivelGrupoModel {
-  final String id;
-  final String nome;
-
-  const UsuarioDisponivelGrupoModel({required this.id, required this.nome});
-
-  factory UsuarioDisponivelGrupoModel.fromJson(Map<String, dynamic> json) =>
-      UsuarioDisponivelGrupoModel(
-        id: json['id'] as String,
-        nome: json['nome'] as String,
-      );
-}

@@ -149,26 +149,8 @@ class GruposService {
     }).toList();
   }
 
-  /// List registered users who can be added to this group.
-  Future<List<UsuarioDisponivelGrupoModel>> getUsuariosDisponiveis(
-    String grupoId,
-  ) async {
-    final rows =
-        await _supabase.rpc(
-              'list_group_invitees',
-              params: {'p_grupo_id': grupoId},
-            )
-            as List<dynamic>;
-
-    return rows
-        .map(
-          (row) =>
-              UsuarioDisponivelGrupoModel.fromJson(row as Map<String, dynamic>),
-        )
-        .toList();
-  }
-
-  /// Add a member to a group by email (Coordenador only)
+  /// Add a member to a group by exact email (Coordenador only).
+  /// The RPC does not reveal whether the email belongs to a registered user.
   Future<void> addMembro({
     required String grupoId,
     required String email,
@@ -182,19 +164,6 @@ class GruposService {
         'p_papel': papel,
       },
     );
-  }
-
-  /// Add a selected registered user to a group (Coordenador only).
-  Future<void> addMembroPorId({
-    required String grupoId,
-    required String userId,
-    String papel = 'membro',
-  }) async {
-    await _supabase.from('membros_grupo').insert({
-      'grupo_id': grupoId,
-      'user_id': userId,
-      'papel': papel,
-    });
   }
 
   /// Remove a member from a group (Coordenador only)

@@ -283,38 +283,8 @@ revoke all on function public.add_group_member_by_email(uuid, text, text)
 grant execute on function public.add_group_member_by_email(uuid, text, text)
   to authenticated;
 
--- Coordinators can look up registered users who are not yet in the group.
--- The picker exposes only public profile fields, never email addresses.
-create or replace function public.list_group_invitees(p_grupo_id uuid)
-returns table (id uuid, nome text)
-language plpgsql
-security definer
-stable
-set search_path = ''
-as $$
-begin
-  if auth.uid() is null then
-    raise exception 'Usuário não autenticado';
-  end if;
-  if not public.is_group_coordinator(p_grupo_id) then
-    raise exception 'Somente coordenadores podem consultar usuários para o grupo';
-  end if;
-
-  return query
-  select u.id, u.nome
-  from public.users as u
-  where not exists (
-    select 1
-    from public.membros_grupo as mg
-    where mg.grupo_id = p_grupo_id
-      and mg.user_id = u.id
-  )
-  order by lower(u.nome);
-end;
-$$;
-
-revoke all on function public.list_group_invitees(uuid) from public;
-grant execute on function public.list_group_invitees(uuid) to authenticated;
+-- No RPC lists registered users (issue #24): members are invited by exact
+-- e-mail through add_group_member_by_email.
 
 -- ── grupos policies ───────────────────────────────────────────────────────────
 create policy "Members can read their groups"
@@ -692,5 +662,4 @@ revoke execute on function public.handle_new_user() from public, anon;
 revoke execute on function public.is_group_coordinator(uuid) from public, anon;
 revoke execute on function public.is_group_creator(uuid) from public, anon;
 revoke execute on function public.is_group_member(uuid) from public, anon;
-revoke execute on function public.list_group_invitees(uuid) from public, anon;
 revoke execute on function public.update_my_profile(text, text, text) from public, anon;
