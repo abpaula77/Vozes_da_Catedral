@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../profile/presentation/user_avatar.dart';
 import '../data/groups_provider.dart';
 import '../data/solicitacoes_provider.dart';
 import '../domain/solicitacao_model.dart';
@@ -244,11 +245,8 @@ class _SolicitacaoPendenteTileState
         children: [
           Row(
             children: [
-              CircleAvatar(
-                foregroundImage: foto == null ? null : NetworkImage(foto),
-                onForegroundImageError: foto == null ? null : (_, __) {},
-                child: Text(solicitacao.inicial),
-              ),
+              // Handles both Google and uploaded photos (issue #42).
+              UserAvatar(nome: solicitacao.nome, foto: foto),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

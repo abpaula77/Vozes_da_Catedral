@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/groups_provider.dart';
 import '../domain/group_model.dart';
+import '../../profile/presentation/user_avatar.dart';
 import 'join_requests_widgets.dart';
 
 class GroupMembersScreen extends ConsumerWidget {
@@ -80,13 +81,7 @@ class GroupMembersScreen extends ConsumerWidget {
                   final member = items[index - header.length];
                   return Card(
                     child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text(
-                          member.nome.isEmpty
-                              ? '?'
-                              : member.nome[0].toUpperCase(),
-                        ),
-                      ),
+                      leading: UserAvatar(nome: member.nome, foto: member.foto),
                       title: Text(member.nome),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,

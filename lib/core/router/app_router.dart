@@ -9,6 +9,7 @@ import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/celebrations/presentation/celebrations_screen.dart';
 import '../../features/celebrations/presentation/performance_screen.dart';
 import '../../features/groups/presentation/explore_groups_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/groups/presentation/group_detail_screen.dart';
 import '../../features/groups/presentation/group_members_screen.dart';
 import '../../features/groups/presentation/groups_screen.dart';
@@ -23,6 +24,7 @@ class AppRoutes {
   static const groups = '/groups';
   // Outside /groups/:grupoId so it is never taken for a group id.
   static const exploreGroups = '/explore';
+  static const profile = '/profile';
   static const groupDetail = '/groups/:grupoId';
   static const groupMembers = '/groups/:grupoId/members';
   static const songDetail = '/groups/:grupoId/songs/:musicaId';
@@ -82,6 +84,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.exploreGroups,
         builder: (context, state) => const ExploreGroupsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: AppRoutes.groups,
@@ -202,6 +208,8 @@ extension AppNavigation on BuildContext {
       push(AppRoutes.groupMembersPath(grupoId));
 
   void pushExploreGroups() => push(AppRoutes.exploreGroups);
+
+  void pushProfile() => push(AppRoutes.profile);
 
   void pushSongDetail(String grupoId, String musicaId) =>
       push(AppRoutes.songDetailPath(grupoId, musicaId));

@@ -27,40 +27,40 @@ A migration é aditiva e pode ser aplicada antes do app. Cada tarefa indica os r
 
 ## 2. Dados e domínio (app)
 
-- [ ] 2.1 Adicionar `image_picker: 1.2.1` (versão fixada) ao `pubspec.yaml` e subir a versão para `0.2.0+3`
+- [x] 2.1 Adicionar `image_picker: 1.2.1` (versão fixada) ao `pubspec.yaml` e subir a versão para `0.2.0+3`
 
-- [ ] 2.2 `lib/features/profile/domain/meu_perfil_model.dart` e validação do nome
+- [x] 2.2 `lib/features/profile/domain/meu_perfil_model.dart` e validação do nome
 
-- [ ] 2.3 `lib/features/profile/data/foto_resolver.dart` (Google direto; enviadas por link temporário em lote, 1 h, em memória; falha → inicial)
+- [x] 2.3 `lib/features/profile/data/foto_resolver.dart` (Google direto; enviadas por link temporário em lote, 1 h, em memória; falha → inicial)
   - _Requisitos: 3.4, 3.5_
 
-- [ ] 2.4 `lib/features/profile/data/profile_service.dart` e providers (carregar, nome, enviar/usar Google/remover foto, apagar arquivo anterior, excluir conta)
+- [x] 2.4 `lib/features/profile/data/profile_service.dart` e providers (carregar, nome, enviar/usar Google/remover foto, apagar arquivo anterior, excluir conta)
   - _Requisitos: 1.2, 1.3, 2.1–2.6, 6.1–6.3_
 
-- [ ] 2.5 Testes de unidade: modelo, classificação da foto e validação do nome
+- [x] 2.5 Testes de unidade: modelo, classificação da foto e validação do nome
 
 ## 3. Telas
 
-- [ ] 3.1 Widget `lib/core/widgets/user_avatar.dart`
+- [x] 3.1 Widget `lib/features/profile/presentation/user_avatar.dart` (fora de `core` porque depende do resolvedor de fotos do perfil)
   - _Requisitos: 3.4_
 
-- [ ] 3.2 Tela "Meu perfil" (rota `/profile`): foto com menu, nome, e-mail, Sair, excluir conta com confirmação `EXCLUIR`
+- [x] 3.2 Tela "Meu perfil" (rota `/profile`): foto com menu, nome, e-mail, Sair, excluir conta com confirmação `EXCLUIR`
   - _Requisitos: 1.1–1.5, 2.1–2.4, 6.1, 6.3_
 
-- [ ] 3.3 Meus Grupos: avatar abre o perfil, no lugar do botão Sair
+- [x] 3.3 Meus Grupos: avatar abre o perfil, no lugar do botão Sair
   - _Requisitos: 1.1, 1.4, 3.3_
 
-- [ ] 3.4 Primeiro acesso: só confirmação do nome e foto do Google
+- [x] 3.4 Primeiro acesso: só confirmação do nome e foto do Google
   - _Requisitos: 5.1, 5.2_
 
-- [ ] 3.5 Membros e solicitações com `UserAvatar`; `getMembros` lê `foto`
+- [x] 3.5 Membros e solicitações com `UserAvatar`; `getMembros` lê `foto`
   - _Requisitos: 3.1, 3.2_
 
 ## 4. Verificação e publicação
 
-- [ ] 4.1 `dart format`, `flutter analyze`, `flutter test`
+- [x] 4.1 `dart format`, `flutter analyze`, `flutter test`
 
-- [ ] 4.2 Commit e PR (`Refs #42`)
+- [x] 4.2 Commit e PR (`Refs #42`)
 
 - [ ] 4.3 Merge, deploy Web, APK `0.2.0+3` no Samsung
 
