@@ -48,14 +48,14 @@ Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 t
 | #23 | RLS: autor imutável, último coordenador, música do mesmo grupo, revogar `anon` | ✅ Fechada (PR #36). Migration aplicada |
 | #24 | `list_group_invitees` permite enumerar todos os usuários (risco médio) | Aberta, sem branch. Muda o fluxo de convite: combinar com o usuário antes |
 | #25 | Cabeçalhos de segurança Web (CSP etc.) | ✅ Fechada (PRs #37 e #38). Validada em produção pelo usuário |
-| #26 | Android: `allowBackup`, deep link/App Links, assinatura de release | Aberta, sem branch |
+| #26 | Android: `allowBackup`, deep link/App Links, assinatura de release | ✅ Fechada (PR #40). Backup desativado; release sem `key.properties` falha. App Links avaliado e não adotado (login usa PKCE). Login validado pelo usuário |
 | #27 | Política de direitos autorais do catálogo compartilhado | Aberta, sem branch (decisão do usuário) |
 
 (#28 a #33 foram duplicatas e estão fechadas.)
 
 ### PRs e branches
-- Mergeados em `master`: **#34** (minimização de dados), **#35** (#22), **#36** (#23), **#37** e **#38** (#25).
-- Ordem sugerida do restante: #26, #24, #27.
+- Mergeados em `master`: **#34** (minimização de dados), **#35** (#22), **#36** (#23), **#37** e **#38** (#25), **#40** (#26), **#39** (este HANDOFF).
+- Restam #24 e #27. Proposta para a #24 (aguardando confirmação do usuário): remover a lista `list_group_invitees` e convidar só por e-mail exato (`add_group_member_by_email`).
 
 ### Deploy Web (importante)
 - O deploy é `vercel deploy .\build\web --prod`, então a raiz do deploy é `build/web`.
@@ -64,7 +64,9 @@ Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 t
 - Depois de publicar, confira os cabeçalhos da resposta (CSP, `X-Frame-Options`, etc.). O app usa URLs com `#` (estratégia padrão), então rotas profundas não dependem do rewrite.
 - A CSP libera `self`, `*.supabase.co` (https/wss), `www.gstatic.com` e `fonts.gstatic.com`, `wasm-unsafe-eval` e workers `blob:`. Se um recurso novo for bloqueado, o Console mostra "Refused to…".
 
-### Android: assinatura
+### Android: assinatura e backup
+- Desde o PR #40, `flutter build apk --release` **falha** sem `android/key.properties` (não há mais fallback para a chave debug). Para testes sem a chave, use `--debug`.
+- O app não participa de backup do Android (`allowBackup="false"` + `res/xml/data_extraction_rules.xml`); após reinstalar ou trocar de aparelho, entrar de novo e sincronizar.
 - O APK release é assinado com `C:\Users\abpau\vozes-da-catedral-release.jks` (fora do repositório; configurado em `android/key.properties`, que está no `.gitignore`). Faça backup desse keystore: sem ele, não há como atualizar o app instalado.
 - Em 13/11/2026 o Samsung estava com um APK assinado com a chave **debug**; foi preciso desinstalar uma vez para instalar o release. Daqui em diante, `adb install -r` funciona.
 - Outros usuários Android com APK de debug também precisam desinstalar uma vez (perdem o cache local; sincronizar antes).
@@ -397,7 +399,7 @@ adb devices
 4. Se o build funcionar, o app deve mostrar tela de splash → login
 5. Crie uma conta de teste no app → será redirecionado para onboarding
 6. **Lembre o usuário:** antes de testar grupos/músicas, precisa criar um grupo pelo app
-7. Todas as Tasks 1–11 estão concluídas, assim como #22, #23 e #25 e a restrição de e-mail. Continue pela seção **Varredura técnica e de segurança**: #26, #24 e #27 (uma branch por issue).
+7. Todas as Tasks 1–11 estão concluídas, assim como #22, #23, #25, #26 e a restrição de e-mail. Continue pela seção **Varredura técnica e de segurança**: #24 e #27 (uma branch por issue).
 
 > Para atualizar o GitHub Projects ao concluir cada task:
 > `gh issue close <NUMBER> --repo abpaula77/Vozes_da_Catedral --comment "Task concluída: <descrição>"`
