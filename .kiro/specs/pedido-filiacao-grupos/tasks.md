@@ -44,14 +44,14 @@ Cada tarefa indica os requisitos que atende. As tarefas de banco vêm primeiro p
 
 ## 2. Domínio e dados (app)
 
-- [ ] 2.1 Criar `lib/features/groups/domain/solicitacao_model.dart`
+- [x] 2.1 Criar `lib/features/groups/domain/solicitacao_model.dart`
   - `StatusSolicitacao`, `GrupoAbertoModel`, `MinhaSolicitacaoModel`, `SolicitacaoPendenteModel`, todos com `fromJson`
   - _Requisitos: 2.4, 4.1, 5.2_
 
-- [ ] 2.2 Escrever testes de unidade dos modelos em `test/features/groups/domain/solicitacao_model_test.dart`
+- [x] 2.2 Escrever testes de unidade dos modelos em `test/features/groups/domain/solicitacao_model_test.dart`
   - `fromJson`, `fromString`, `podeSolicitar`, data de fim da espera
 
-- [ ] 2.3 Criar `lib/features/groups/data/solicitacoes_provider.dart`
+- [x] 2.3 Criar `lib/features/groups/data/solicitacoes_provider.dart`
   - `SolicitacoesService` chamando as 9 RPCs
   - Providers `gruposAbertosProvider`, `minhasSolicitacoesProvider`, `solicitacoesPendentesProvider`, `contagemSolicitacoesProvider`, `aceitaSolicitacoesProvider`
   - Função para transformar `PostgrestException` e erros de rede em mensagens para o usuário
@@ -59,31 +59,31 @@ Cada tarefa indica os requisitos que atende. As tarefas de banco vêm primeiro p
 
 ## 3. Telas
 
-- [ ] 3.1 Tela de membros (coordenador): switch "Aceitar solicitações de entrada"
+- [x] 3.1 Tela de membros (coordenador): switch "Aceitar solicitações de entrada"
   - Visível só para coordenadores; mostra estado de carregamento e erro
   - _Requisitos: 1.2, 1.3, 1.6_
 
-- [ ] 3.2 Tela de membros (coordenador): seção "Solicitações pendentes (N)"
+- [x] 3.2 Tela de membros (coordenador): seção "Solicitações pendentes (N)"
   - Avatar com foto ou inicial, nome, data, mensagem, botões Recusar (com confirmação) e Aprovar
   - Recarrega membros e pendentes após decidir; trata "já foi decidida"
   - _Requisitos: 5.1–5.6_
 
-- [ ] 3.3 Rota `/explore` e helper `pushExploreGroups` em `app_router.dart`
+- [x] 3.3 Rota `/explore` e helper `pushExploreGroups` em `app_router.dart`
 
-- [ ] 3.4 Tela "Encontrar grupos" (`explore_groups_screen.dart`)
+- [x] 3.4 Tela "Encontrar grupos" (`explore_groups_screen.dart`)
   - Seção "Minhas solicitações" com status e Cancelar
   - Filtro por nome, lista de grupos abertos com ação conforme o estado
   - Diálogo de solicitação com mensagem opcional (280, contador)
   - Estados vazio e sem conexão
   - _Requisitos: 2.1–2.6, 3.1–3.6, 4.1, 4.2_
 
-- [ ] 3.5 Tela "Meus Grupos": botão "Encontrar grupos" na AppBar e no estado vazio; badge de pendentes nos grupos coordenados
+- [x] 3.5 Tela "Meus Grupos": botão "Encontrar grupos" na AppBar e no estado vazio; badge de pendentes nos grupos coordenados
   - O badge não aparece se a contagem falhar
   - _Requisitos: 4.3, 5.8_
 
 ## 4. Verificação e publicação
 
-- [ ] 4.1 `dart format`, `flutter analyze` e `flutter test` limpos
+- [x] 4.1 `dart format`, `flutter analyze` e `flutter test` limpos
 
 - [ ] 4.2 Commit e PR (`Refs #41`)
 
