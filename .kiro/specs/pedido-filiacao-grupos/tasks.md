@@ -90,6 +90,6 @@ Cada tarefa indica os requisitos que atende. As tarefas de banco vêm primeiro p
 - [x] 4.3 Após aprovação: merge, deploy Web, APK novo no Samsung
   - Conferir cabeçalhos da Vercel e que a foto do Google carrega com a CSP
 
-- [ ] 4.4 Teste manual com duas contas (usuário): pedir com mensagem, aprovar, recusar e espera de 7 dias, cancelar, fechar o grupo com pendentes; Web e Android
+- [x] 4.4 Teste manual com duas contas (usuário): pedir com mensagem, aprovar, recusar e espera de 7 dias, cancelar, fechar o grupo com pendentes; Web e Android
 
-- [ ] 4.5 Fechar a #41 e atualizar o HANDOFF
+- [x] 4.5 Fechar a #41 e atualizar o HANDOFF

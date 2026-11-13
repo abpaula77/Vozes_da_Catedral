@@ -13,8 +13,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit de código na `master`:** `5e954e5` — merge do PR #43 (convite só por e-mail, #24)
-**Produção (13/11/2026):** Web publicado na Vercel a partir de `5e954e5`; APK release 0.1.1 (code 2) do mesmo commit instalado no Samsung de teste
+**Último commit de código na `master`:** `b2c3bc3` — merge do PR #45 (pedido de filiação, #41)
+**Produção (13/11/2026):** Web publicado na Vercel a partir de `b2c3bc3`; APK release 0.1.1 (code 2) do mesmo commit instalado no Samsung de teste. Para distribuir a outros usuários, considere subir `version` no `pubspec.yaml` (ainda `0.1.1+2`).
 
 **Fluxo de trabalho a partir de 12/11/2026:** uma issue por melhoria e uma branch por issue (`fix/<n>-<nome>`), com PR próprio. Não commitar direto na `master`.
 
@@ -58,14 +58,17 @@ Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 t
 - Todos os riscos da varredura estão tratados. Resta a **#27** (decisão do usuário, não é código).
 - **Mudanças de banco que quebram builds antigos:** publique primeiro o Web e o APK novos, valide e só então aplique a migration (feito assim na restrição de e-mail e na #24). Use `Refs #<n>` no PR, em vez de `Closes`, quando a issue só fecha depois da migration.
 
-### Próximas features (decididas em 13/11/2026)
-- **#41 — Pedido de filiação a grupos.** Decisões do usuário:
-  1. Grupo aparece na busca só se o coordenador marcar **aberto a solicitações** (opt-in).
-  2. Recusado pode solicitar de novo após **7 dias**.
-  3. Coordenador vê **nome e foto** (se houver) do solicitante. `foto` continua sem SELECT direto em `public.users`; sai só pela RPC de solicitações.
-  4. **Sem notificação push**; contador de solicitações na tela de membros.
-  - Desenho proposto: coluna `grupos.aceita_solicitacoes`, tabela `solicitacoes_grupo`, RPCs `listar_grupos_abertos`, `solicitar_entrada`, `cancelar_solicitacao`, `listar_solicitacoes`, `decidir_solicitacao` (aprovação insere em `membros_grupo` de forma atômica). Detalhes na issue.
-  - Sugestão: começar por um **spec** (requisitos → design → tarefas) antes de implementar.
+### #41 — Pedido de filiação a grupos (✅ concluída em 13/11/2026)
+- Spec completo em `.kiro/specs/pedido-filiacao-grupos/` (requisitos, design, tarefas). PR #45, produção a partir de `b2c3bc3`.
+- **Banco** (migration `20261116_group_join_requests.sql`, aplicada): coluna `grupos.aceita_solicitacoes` (default `false`), tabela `solicitacoes_grupo` **sem acesso direto** (RLS sem policies + `revoke`), 9 RPCs `security definer`: `definir_aceita_solicitacoes`, `obter_aceita_solicitacoes`, `listar_solicitacoes_pendentes` (única fonte da foto), `contar_solicitacoes_pendentes`, `decidir_solicitacao` (row lock + insert atômico em `membros_grupo`), `listar_grupos_abertos`, `solicitar_entrada`, `listar_minhas_solicitacoes`, `cancelar_solicitacao`.
+- `add_group_member_by_email` agora também marca como `aprovada` o pedido pendente de quem é convidado.
+- Testes do banco: `supabase/tests/solicitacoes_grupo.sql` (49 verificações, roda em transação revertida). Rode de novo após mexer nessas funções.
+- **App:** tela `/explore` (Encontrar grupos), switch e lista de pendentes na tela de membros, badge em Meus Grupos. Online only; nada no Drift.
+- **Validado pelo usuário** (Web e Android, duas contas): solicitação com aprovação e com recusa. Cancelamento e "fechar grupo com pendente" foram cobertos só pelos testes SQL.
+- Estado em 13/11/2026: os 4 grupos estão com `aceita_solicitacoes = true` (ligado durante o teste); 1 pedido aprovado e 1 recusado.
+- Wish list (no `requirements.md` do spec): limite de pedidos por usuário entre grupos; convite para e-mail não cadastrado.
+
+### Próximas features
 - **#42 — Perfil de usuário e uso da foto.** Escopo aberto: definir quem pode ver a foto (membros do mesmo grupo? solicitantes?) e se haverá upload (Supabase Storage) além do `avatar_url` do Google. Encaixa junto ou logo depois da #41.
 
 ### Deploy Web (importante)
@@ -83,7 +86,8 @@ Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 t
 - Outros usuários Android com APK de debug também precisam desinstalar uma vez (perdem o cache local; sincronizar antes).
 
 ### Estado do banco Supabase (validado via MCP em 13/11/2026)
-- As 9 funções `security definer` de `public` têm `search_path` vazio e `anon` sem `EXECUTE` (eram 10; `list_group_invitees` foi removida na #24).
+- As 18 funções `security definer` de `public` têm `search_path` vazio e `anon` sem `EXECUTE` (9 de antes + 9 da #41; `list_group_invitees` foi removida na #24).
+- O advisor mostra um aviso informativo `rls_enabled_no_policy` em `solicitacoes_grupo`: é intencional (acesso só via RPC).
 - Nenhuma RPC lista usuários cadastrados; membros entram por `add_group_member_by_email` (não revela se o e-mail existe).
 - Triggers ativos: `set_criado_por` (`musicas`, `celebracoes`) e `protect_last_coordinator` (`membros_grupo`).
 - `itens_celebracao` só aceita `musica_id` de música do mesmo grupo da celebração.
@@ -411,7 +415,7 @@ adb devices
 4. Se o build funcionar, o app deve mostrar tela de splash → login
 5. Crie uma conta de teste no app → será redirecionado para onboarding
 6. **Lembre o usuário:** antes de testar grupos/músicas, precisa criar um grupo pelo app
-7. Todas as Tasks 1–11 estão concluídas, assim como a varredura de segurança (#22 a #26) e a restrição de e-mail. Próximos passos: spec da **#41** (pedido de filiação), depois **#42** (perfil/foto); a **#27** aguarda decisão do usuário. Uma branch por issue.
+7. Todas as Tasks 1–11 estão concluídas, assim como a varredura de segurança (#22 a #26), a restrição de e-mail e a **#41** (pedido de filiação). Próximos passos: **#42** (perfil/foto; vale fazer um spec como na #41); a **#27** aguarda decisão do usuário. Uma branch por issue.
 
 > Para atualizar o GitHub Projects ao concluir cada task:
 > `gh issue close <NUMBER> --repo abpaula77/Vozes_da_Catedral --comment "Task concluída: <descrição>"`
