@@ -14,11 +14,7 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.music_note_rounded,
-              size: 80,
-              color: theme.colorScheme.primary,
-            ),
+            Image.asset('web/icons/Icon-512.png', width: 80, height: 80),
             const SizedBox(height: 24),
             Text(
               'Vozes da Catedral',
@@ -35,9 +31,7 @@ class SplashScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 48),
-            CircularProgressIndicator(
-              color: theme.colorScheme.primary,
-            ),
+            CircularProgressIndicator(color: theme.colorScheme.primary),
           ],
         ),
       ),

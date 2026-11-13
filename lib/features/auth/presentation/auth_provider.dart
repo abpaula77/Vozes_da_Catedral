@@ -36,7 +36,11 @@ final currentUserProvider = FutureProvider<UserModel?>((ref) async {
 
   final supabase = ref.watch(supabaseProvider);
   final data =
-      await supabase.from('users').select().eq('id', userId).maybeSingle();
+      await supabase
+          .from('users')
+          .select('id, nome, papel')
+          .eq('id', userId)
+          .maybeSingle();
 
   if (data == null) return null;
   return UserModel.fromJson(data);
@@ -88,19 +92,14 @@ class AuthService {
 
   /// Create or update user profile in the `users` table
   Future<void> createOrUpdateProfile({
-    required String userId,
     required String nome,
-    required String email,
     String? foto,
     String papel = 'membro',
   }) async {
-    await _client.from('users').upsert({
-      'id': userId,
-      'nome': nome,
-      'email': email,
-      'foto': foto,
-      'papel': papel,
-    });
+    await _client.rpc(
+      'update_my_profile',
+      params: {'p_nome': nome, 'p_foto': foto, 'p_papel': papel},
+    );
   }
 }
 

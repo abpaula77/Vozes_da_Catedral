@@ -71,7 +71,6 @@ class GroupMembersScreen extends ConsumerWidget {
                         ),
                       ),
                       title: Text(member.nome),
-                      subtitle: Text(member.email),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -123,7 +122,11 @@ class GroupMembersScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${invitation.displayName} adicionado ao grupo.'),
+            content: Text(
+              invitation.displayName == null
+                  ? 'Solicitação processada. Se a conta estiver cadastrada, foi adicionada ao grupo.'
+                  : '${invitation.displayName} foi adicionado ao grupo.',
+            ),
           ),
         );
       }
@@ -198,11 +201,12 @@ class _RoleLabel extends StatelessWidget {
 class _MemberInvitation {
   final String? email;
   final String? userId;
-  final String displayName;
+  final String? displayName;
   final PapelGrupo papel;
 
-  const _MemberInvitation.byEmail(this.email, this.displayName, this.papel)
-    : userId = null;
+  const _MemberInvitation.byEmail(this.email, this.papel)
+    : userId = null,
+      displayName = null;
 
   const _MemberInvitation.byUser(this.userId, this.displayName, this.papel)
     : email = null;
@@ -258,53 +262,57 @@ class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Adicionar membro'),
-      content: SizedBox(
-        width: 480,
-        height: 440,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SegmentedButton<_AddMemberMethod>(
-              segments: const [
-                ButtonSegment(
-                  value: _AddMemberMethod.email,
-                  icon: Icon(Icons.email_outlined),
-                  label: Text('Por e-mail'),
-                ),
-                ButtonSegment(
-                  value: _AddMemberMethod.registeredUser,
-                  icon: Icon(Icons.people_outline),
-                  label: Text('Usuário cadastrado'),
-                ),
-              ],
-              selected: {_method},
-              onSelectionChanged: (selection) => _selectMethod(selection.first),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<PapelGrupo>(
-              value: _papel,
-              decoration: const InputDecoration(
-                labelText: 'Papel no grupo',
-                border: OutlineInputBorder(),
+      content: Form(
+        key: _formKey,
+        child: SizedBox(
+          width: 480,
+          height: 440,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SegmentedButton<_AddMemberMethod>(
+                segments: const [
+                  ButtonSegment(
+                    value: _AddMemberMethod.email,
+                    icon: Icon(Icons.email_outlined),
+                    label: Text('Por e-mail'),
+                  ),
+                  ButtonSegment(
+                    value: _AddMemberMethod.registeredUser,
+                    icon: Icon(Icons.people_outline),
+                    label: Text('Usuário cadastrado'),
+                  ),
+                ],
+                selected: {_method},
+                onSelectionChanged:
+                    (selection) => _selectMethod(selection.first),
               ),
-              items:
-                  PapelGrupo.values
-                      .map(
-                        (papel) => DropdownMenuItem(
-                          value: papel,
-                          child: Text(
-                            papel.isCoordenador ? 'Coordenador' : 'Membro',
+              const SizedBox(height: 16),
+              DropdownButtonFormField<PapelGrupo>(
+                value: _papel,
+                decoration: const InputDecoration(
+                  labelText: 'Papel no grupo',
+                  border: OutlineInputBorder(),
+                ),
+                items:
+                    PapelGrupo.values
+                        .map(
+                          (papel) => DropdownMenuItem(
+                            value: papel,
+                            child: Text(
+                              papel.isCoordenador ? 'Coordenador' : 'Membro',
+                            ),
                           ),
-                        ),
-                      )
-                      .toList(),
-              onChanged: (papel) {
-                if (papel != null) setState(() => _papel = papel);
-              },
-            ),
-            const SizedBox(height: 16),
-            Expanded(child: _methodContent()),
-          ],
+                        )
+                        .toList(),
+                onChanged: (papel) {
+                  if (papel != null) setState(() => _papel = papel);
+                },
+              ),
+              const SizedBox(height: 16),
+              Expanded(child: _methodContent()),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -316,10 +324,9 @@ class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
           FilledButton(
             onPressed: () {
               if (!_formKey.currentState!.validate()) return;
-              final email = _emailController.text.trim();
               Navigator.pop(
                 context,
-                _MemberInvitation.byEmail(email, email, _papel),
+                _MemberInvitation.byEmail(_emailController.text.trim(), _papel),
               );
             },
             child: const Text('Adicionar'),
@@ -330,25 +337,23 @@ class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
 
   Widget _methodContent() {
     if (_method == _AddMemberMethod.email) {
-      return Form(
-        key: _formKey,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: TextFormField(
-            controller: _emailController,
-            decoration: const InputDecoration(
-              labelText: 'E-mail',
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) {
-              final email = value?.trim() ?? '';
-              if (email.isEmpty || !email.contains('@')) {
-                return 'Informe um e-mail válido.';
-              }
-              return null;
-            },
+      return Align(
+        alignment: Alignment.topCenter,
+        child: TextFormField(
+          controller: _emailController,
+          decoration: const InputDecoration(
+            labelText: 'E-mail',
+            border: OutlineInputBorder(),
           ),
+          keyboardType: TextInputType.emailAddress,
+          autocorrect: false,
+          validator: (value) {
+            final email = value?.trim() ?? '';
+            if (email.isEmpty || !email.contains('@')) {
+              return 'Informe um e-mail válido.';
+            }
+            return null;
+          },
         ),
       );
     }
@@ -386,11 +391,7 @@ class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
         final query = _query.toLowerCase();
         final filteredUsers =
             users
-                .where(
-                  (user) =>
-                      user.nome.toLowerCase().contains(query) ||
-                      user.email.toLowerCase().contains(query),
-                )
+                .where((user) => user.nome.toLowerCase().contains(query))
                 .toList();
 
         if (users.isEmpty) {
@@ -430,7 +431,6 @@ class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
                               ),
                             ),
                             title: Text(user.nome),
-                            subtitle: Text(user.email),
                             trailing: const Icon(Icons.person_add_alt_1),
                             onTap:
                                 () => Navigator.pop(

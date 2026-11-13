@@ -127,10 +127,7 @@ class GruposService {
             .map((row) => (row as Map<String, dynamic>)['user_id'] as String)
             .toList();
     final profiles =
-        await _supabase
-                .from('users')
-                .select('id, nome, email')
-                .inFilter('id', userIds)
+        await _supabase.from('users').select('id, nome').inFilter('id', userIds)
             as List<dynamic>;
     final profilesById = {
       for (final profile in profiles)
@@ -147,13 +144,12 @@ class GruposService {
       return MembroGrupoModel(
         userId: userId,
         nome: profile['nome'] as String,
-        email: profile['email'] as String,
         papel: PapelGrupo.fromString(membership['papel'] as String),
       );
     }).toList();
   }
 
-  /// List registered app users who can be added to this group.
+  /// List registered users who can be added to this group.
   Future<List<UsuarioDisponivelGrupoModel>> getUsuariosDisponiveis(
     String grupoId,
   ) async {
@@ -178,31 +174,21 @@ class GruposService {
     required String email,
     String papel = 'membro',
   }) async {
-    final userId =
-        await _supabase.rpc(
-              'find_group_invitee',
-              params: {'p_grupo_id': grupoId, 'p_email': email.trim()},
-            )
-            as String?;
-
-    if (userId == null) {
-      throw Exception('Usuário não encontrado com esse e-mail.');
-    }
-
-    await _addMembroPorId(grupoId: grupoId, userId: userId, papel: papel);
+    await _supabase.rpc(
+      'add_group_member_by_email',
+      params: {
+        'p_grupo_id': grupoId,
+        'p_email': email.trim(),
+        'p_papel': papel,
+      },
+    );
   }
 
-  /// Add a selected registered app user to a group (Coordenador only).
+  /// Add a selected registered user to a group (Coordenador only).
   Future<void> addMembroPorId({
     required String grupoId,
     required String userId,
     String papel = 'membro',
-  }) => _addMembroPorId(grupoId: grupoId, userId: userId, papel: papel);
-
-  Future<void> _addMembroPorId({
-    required String grupoId,
-    required String userId,
-    required String papel,
   }) async {
     await _supabase.from('membros_grupo').insert({
       'grupo_id': grupoId,
