@@ -34,13 +34,15 @@ class CifraView extends StatelessWidget {
         _SongHeader(song: song, theme: theme),
         const SizedBox(height: 24),
         // Sections
-        ...song.secoes.map((section) => _SectionWidget(
-              section: section,
-              lyricFontSize: lyricFontSize,
-              chordFontSize: chordFontSize,
-              showChords: showChords,
-              theme: theme,
-            )),
+        ...song.secoes.map(
+          (section) => _SectionWidget(
+            section: section,
+            lyricFontSize: lyricFontSize,
+            chordFontSize: chordFontSize,
+            showChords: showChords,
+            theme: theme,
+          ),
+        ),
       ],
     );
   }
@@ -80,11 +82,13 @@ class _SongHeader extends StatelessWidget {
                 label: '${song.bpm} BPM',
                 theme: theme,
               ),
-            ...song.categorias.map((cat) => _MetaChip(
-                  icon: Icons.label_outline,
-                  label: _formatCategoria(cat),
-                  theme: theme,
-                )),
+            ...song.categorias.map(
+              (cat) => _MetaChip(
+                icon: Icons.label_outline,
+                label: _formatCategoria(cat),
+                theme: theme,
+              ),
+            ),
           ],
         ),
       ],
@@ -103,8 +107,11 @@ class _MetaChip extends StatelessWidget {
   final String label;
   final ThemeData theme;
 
-  const _MetaChip(
-      {required this.icon, required this.label, required this.theme});
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    required this.theme,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +155,8 @@ class _SectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRefrao = section.tipo.toUpperCase().contains('REFRAO') ||
+    final isRefrao =
+        section.tipo.toUpperCase().contains('REFRAO') ||
         section.tipo.toUpperCase().contains('REFRÃO');
 
     return Padding(
@@ -161,30 +169,34 @@ class _SectionWidget extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: isRefrao
-                  ? theme.colorScheme.primaryContainer
-                  : theme.colorScheme.surfaceContainerHighest,
+              color:
+                  isRefrao
+                      ? theme.colorScheme.primaryContainer
+                      : theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               _formatSectionLabel(section.tipo),
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: isRefrao
-                    ? theme.colorScheme.onPrimaryContainer
-                    : theme.colorScheme.onSurfaceVariant,
+                color:
+                    isRefrao
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurfaceVariant,
                 letterSpacing: 0.8,
               ),
             ),
           ),
           // Lines
-          ...section.linhas.map((line) => _LineWidget(
-                line: line,
-                lyricFontSize: lyricFontSize,
-                chordFontSize: chordFontSize,
-                showChords: showChords,
-                theme: theme,
-              )),
+          ...section.linhas.map(
+            (line) => _LineWidget(
+              line: line,
+              lyricFontSize: lyricFontSize,
+              chordFontSize: chordFontSize,
+              showChords: showChords,
+              theme: theme,
+            ),
+          ),
         ],
       ),
     );

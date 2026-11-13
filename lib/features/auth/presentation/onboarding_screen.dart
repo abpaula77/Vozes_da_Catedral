@@ -21,8 +21,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       final supabase = ref.read(supabaseProvider);
       final user = supabase.auth.currentUser;
       if (user == null) return;
-      await ref.read(authServiceProvider).createOrUpdateProfile(
-            nome: user.userMetadata?['nome'] ??
+      await ref
+          .read(authServiceProvider)
+          .createOrUpdateProfile(
+            nome:
+                user.userMetadata?['nome'] ??
                 user.userMetadata?['full_name'] ??
                 user.email?.split('@').first ??
                 'Usuário',
@@ -32,9 +35,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // Profile saved — router will redirect automatically via authSessionProvider
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao salvar perfil: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao salvar perfil: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -55,8 +58,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.music_note_rounded,
-                      size: 64, color: theme.colorScheme.primary),
+                  Icon(
+                    Icons.music_note_rounded,
+                    size: 64,
+                    color: theme.colorScheme.primary,
+                  ),
                   const SizedBox(height: 24),
                   Text(
                     'Bem-vindo ao\nVozes da Catedral',
@@ -93,13 +99,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   const SizedBox(height: 40),
                   FilledButton(
                     onPressed: _isLoading ? null : _confirm,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Continuar'),
+                    child:
+                        _isLoading
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Text('Continuar'),
                   ),
                 ],
               ),
@@ -138,45 +145,59 @@ class _RoleCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
+            color:
+                selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outlineVariant,
             width: selected ? 2 : 1,
           ),
-          color: selected
-              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-              : theme.colorScheme.surface,
+          color:
+              selected
+                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+                  : theme.colorScheme.surface,
         ),
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: selected
-                  ? theme.colorScheme.primaryContainer
-                  : theme.colorScheme.surfaceContainerHighest,
-              child: Icon(icon,
-                  color: selected
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurfaceVariant),
+              backgroundColor:
+                  selected
+                      ? theme.colorScheme.primaryContainer
+                      : theme.colorScheme.surfaceContainerHighest,
+              child: Icon(
+                icon,
+                color:
+                    selected
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.7))),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
                 ],
               ),
             ),
             if (selected)
-              Icon(Icons.check_circle,
-                  color: theme.colorScheme.primary, size: 20),
+              Icon(
+                Icons.check_circle,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
           ],
         ),
       ),
