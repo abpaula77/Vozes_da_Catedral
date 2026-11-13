@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/app_router.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/groups_provider.dart';
+import '../data/solicitacoes_provider.dart';
 import '../domain/group_model.dart';
 
 class GroupsScreen extends ConsumerStatefulWidget {
@@ -29,6 +30,8 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
     setState(() => _isSyncing = true);
     try {
       await ref.read(gruposServiceProvider).syncGrupos();
+      // Refresh the pending-request badges together with the groups.
+      if (mounted) ref.invalidate(contagemSolicitacoesProvider);
       if (mounted && showSuccess) {
         ScaffoldMessenger.of(
           context,
@@ -48,12 +51,21 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   @override
   Widget build(BuildContext context) {
     final gruposAsync = ref.watch(gruposProvider);
+    // Badges are optional: if the count fails, they are simply not shown.
+    final pendentesPorGrupo =
+        ref.watch(contagemSolicitacoesProvider).valueOrNull ??
+        const <String, int>{};
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meus Grupos'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.travel_explore),
+            tooltip: 'Encontrar grupos',
+            onPressed: () => context.pushExploreGroups(),
+          ),
           IconButton(
             icon:
                 _isSyncing
@@ -94,10 +106,16 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Crie um grupo para começar.',
+                    'Crie um grupo ou encontre um para participar.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () => context.pushExploreGroups(),
+                    icon: const Icon(Icons.travel_explore),
+                    label: const Text('Encontrar um grupo'),
                   ),
                 ],
               ),
@@ -109,7 +127,10 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final grupo = grupos[index];
-              return _GrupoCard(grupo: grupo);
+              return _GrupoCard(
+                grupo: grupo,
+                pendentes: pendentesPorGrupo[grupo.id] ?? 0,
+              );
             },
           );
         },
@@ -221,20 +242,34 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
 
 class _GrupoCard extends StatelessWidget {
   final GrupoModel grupo;
-  const _GrupoCard({required this.grupo});
+
+  /// Pending join requests (only reported for groups the user coordinates).
+  final int pendentes;
+
+  const _GrupoCard({required this.grupo, this.pendentes = 0});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final avatar = CircleAvatar(
+      backgroundColor: theme.colorScheme.primaryContainer,
+      child: Icon(
+        Icons.music_note,
+        color: theme.colorScheme.onPrimaryContainer,
+      ),
+    );
     return Card(
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Icon(
-            Icons.music_note,
-            color: theme.colorScheme.onPrimaryContainer,
-          ),
-        ),
+        leading:
+            pendentes > 0
+                ? Tooltip(
+                  message:
+                      pendentes == 1
+                          ? '1 solicitação de entrada pendente'
+                          : '$pendentes solicitações de entrada pendentes',
+                  child: Badge.count(count: pendentes, child: avatar),
+                )
+                : avatar,
         title: Text(
           grupo.nome,
           style: const TextStyle(fontWeight: FontWeight.w600),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/groups_provider.dart';
 import '../domain/group_model.dart';
+import 'join_requests_widgets.dart';
 
 class GroupMembersScreen extends ConsumerWidget {
   final String grupoId;
@@ -52,15 +53,31 @@ class GroupMembersScreen extends ConsumerWidget {
                 (error, _) =>
                     Center(child: Text('Erro ao carregar membros: $error')),
             data: (items) {
+              final header = <Widget>[
+                if (grupo.isCoordenador) ...[
+                  AceitaSolicitacoesSwitch(grupoId: grupoId),
+                  SolicitacoesPendentesSection(grupoId: grupoId),
+                ],
+              ];
               if (items.isEmpty) {
-                return const Center(child: Text('Este grupo não tem membros.'));
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    ...header,
+                    const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(child: Text('Este grupo não tem membros.')),
+                    ),
+                  ],
+                );
               }
               return ListView.separated(
                 padding: const EdgeInsets.all(16),
-                itemCount: items.length,
+                itemCount: header.length + items.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
-                  final member = items[index];
+                  if (index < header.length) return header[index];
+                  final member = items[index - header.length];
                   return Card(
                     child: ListTile(
                       leading: CircleAvatar(
