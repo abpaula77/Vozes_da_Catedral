@@ -129,9 +129,14 @@ flutter build apk --release
 ```
 
 O arquivo será gerado em `build/app/outputs/flutter-apk/app-release.apk`.
-Sem uma chave de release configurada, o APK é assinado com a chave debug e
-serve apenas para testes. Para distribuir atualizações assinadas de forma
-consistente, crie e guarde uma chave privada fora do repositório:
+O build release exige a chave de release: sem `android/key.properties`, o
+Gradle interrompe o `assembleRelease`/`bundleRelease` com erro, em vez de
+assinar com a chave debug. Para testes sem a chave, use
+`flutter build apk --debug`. Um app assinado com a chave debug não pode ser
+atualizado pelo APK de release sem desinstalar (o que apaga os dados locais).
+
+Para configurar, crie e guarde uma chave privada fora do repositório
+(faça backup: sem ela não é possível atualizar o app já instalado):
 
 ```powershell
 keytool -genkey -v -keystore "$HOME\vozes-da-catedral-release.jks" `
@@ -149,6 +154,11 @@ storeFile=C:/Users/SEU_USUARIO/vozes-da-catedral-release.jks
 
 Não compartilhe nem perca a chave e as senhas. Builds release seguintes
 usarão essa chave automaticamente.
+
+O app não participa de backup do Android (`allowBackup="false"` e
+`data_extraction_rules.xml`): a sessão e o cache offline não são copiados para
+a nuvem nem para um aparelho novo. Após reinstalar ou trocar de aparelho, basta
+entrar novamente e sincronizar.
 
 Para instalar o APK diretamente no Android (sideload):
 

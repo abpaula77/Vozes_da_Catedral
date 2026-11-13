@@ -65,13 +65,29 @@ android {
 
     buildTypes {
         release {
-            signingConfig =
-                if (keystorePropertiesFile.exists()) {
-                    signingConfigs.getByName("release")
-                } else {
-                    signingConfigs.getByName("debug")
-                }
+            // Issue #26: never fall back to the debug key for release builds.
+            // An APK signed with the debug key cannot be updated by the
+            // release-signed one without uninstalling (and losing local data).
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
+    }
+}
+
+// Fail fast when a release artifact is requested without the release key,
+// while keeping debug/profile builds working on machines without it.
+gradle.taskGraph.whenReady {
+    val buildsRelease =
+        allTasks.any { task ->
+            task.project == project &&
+                (task.name == "assembleRelease" || task.name == "bundleRelease")
+        }
+    if (buildsRelease && !keystorePropertiesFile.exists()) {
+        throw GradleException(
+            "android/key.properties not found: release builds must be signed " +
+                "with the release keystore. See README (Android release signing).",
+        )
     }
 }
 
