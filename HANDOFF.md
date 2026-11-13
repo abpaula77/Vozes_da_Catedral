@@ -1,7 +1,7 @@
 # Handoff — Vozes da Catedral
 
 > Documento de continuidade para outra sessão de IA ou desenvolvedor.
-> Última atualização: novembro/2026
+> Última atualização: 13/11/2026
 
 ---
 
@@ -13,7 +13,10 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit:** `44ad595` — feat: add Google OAuth sign-in
+**Último commit na `master`:** `c714354` — merge do PR #38 (`vercel.json` dentro de `build/web`)
+**Produção (13/11/2026):** Web publicado na Vercel a partir de `c714354`; APK release 0.1.1 (code 2) instalado no Samsung de teste
+
+**Fluxo de trabalho a partir de 12/11/2026:** uma issue por melhoria e uma branch por issue (`fix/<n>-<nome>`), com PR próprio. Não commitar direto na `master`.
 
 ---
 
@@ -35,6 +38,58 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 
 ---
 
+## Varredura técnica e de segurança (12–13/11/2026)
+
+Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 testes passando. A cobertura de testes é baixa (só parser, UUID e modelo de celebração; sync, RLS e auth não têm teste).
+
+| Issue | Tema | Estado |
+|-------|------|--------|
+| #22 | `schema.sql` desatualizado + `search_path` das funções `security definer` | ✅ Fechada (PR #35). Migration aplicada |
+| #23 | RLS: autor imutável, último coordenador, música do mesmo grupo, revogar `anon` | ✅ Fechada (PR #36). Migration aplicada |
+| #24 | `list_group_invitees` permite enumerar todos os usuários (risco médio) | Aberta, sem branch. Muda o fluxo de convite: combinar com o usuário antes |
+| #25 | Cabeçalhos de segurança Web (CSP etc.) | ✅ Fechada (PRs #37 e #38). Validada em produção pelo usuário |
+| #26 | Android: `allowBackup`, deep link/App Links, assinatura de release | Aberta, sem branch |
+| #27 | Política de direitos autorais do catálogo compartilhado | Aberta, sem branch (decisão do usuário) |
+
+(#28 a #33 foram duplicatas e estão fechadas.)
+
+### PRs e branches
+- Mergeados em `master`: **#34** (minimização de dados), **#35** (#22), **#36** (#23), **#37** e **#38** (#25).
+- Ordem sugerida do restante: #26, #24, #27.
+
+### Deploy Web (importante)
+- O deploy é `vercel deploy .\build\web --prod`, então a raiz do deploy é `build/web`.
+- A configuração da Vercel fica em **`web/vercel.json`** (o `flutter build web` copia para `build/web`). Um `vercel.json` na raiz do repositório **não** é lido; foi por isso que a CSP e os rewrites não chegavam à produção até o PR #38.
+- O vínculo do projeto fica em `build/web/.vercel/project.json` (projeto `vozes-da-catedral`). O `flutter build web` não apaga esse arquivo, mas confira antes de publicar.
+- Depois de publicar, confira os cabeçalhos da resposta (CSP, `X-Frame-Options`, etc.). O app usa URLs com `#` (estratégia padrão), então rotas profundas não dependem do rewrite.
+- A CSP libera `self`, `*.supabase.co` (https/wss), `www.gstatic.com` e `fonts.gstatic.com`, `wasm-unsafe-eval` e workers `blob:`. Se um recurso novo for bloqueado, o Console mostra "Refused to…".
+
+### Android: assinatura
+- O APK release é assinado com `C:\Users\abpau\vozes-da-catedral-release.jks` (fora do repositório; configurado em `android/key.properties`, que está no `.gitignore`). Faça backup desse keystore: sem ele, não há como atualizar o app instalado.
+- Em 13/11/2026 o Samsung estava com um APK assinado com a chave **debug**; foi preciso desinstalar uma vez para instalar o release. Daqui em diante, `adb install -r` funciona.
+- Outros usuários Android com APK de debug também precisam desinstalar uma vez (perdem o cache local; sincronizar antes).
+
+### Estado do banco Supabase (validado via MCP em 13/11/2026)
+- As 10 funções `security definer` de `public` têm `search_path` vazio e `anon` sem `EXECUTE`.
+- Triggers ativos: `set_criado_por` (`musicas`, `celebracoes`) e `protect_last_coordinator` (`membros_grupo`).
+- `itens_celebracao` só aceita `musica_id` de música do mesmo grupo da celebração.
+- Contagens no momento da validação: 4 grupos, 9 membros, 211 músicas, 3 celebrações, 36 itens, 6 usuários.
+- Testes feitos em transação revertida (nada gravado). **Não** houve teste pelo app com duas contas (coordenador e membro).
+- 3 dos 4 grupos têm um único coordenador; remover esse coordenador agora retorna erro. O app não trata essa mensagem de forma específica.
+
+- **Restrição de e-mail aplicada em 13/11/2026** (migration `fix_public_users_select_grant`): `authenticated` só lê `id`, `nome` e `papel` de `public.users`; `email`, `foto`, `select *` e `update` direto retornam erro de permissão. Perfil é gravado pela RPC `update_my_profile`. Validado em transação revertida. Para reverter: `grant select on public.users to authenticated;`
+- **O APK 0.1.0 (anterior ao #34) não funciona mais** com essa restrição (lia `email` e fazia `upsert` em `users`). Todo usuário Android precisa do 0.1.1 ou superior.
+- Advisor de segurança: restam só avisos esperados de RPCs `security definer` executáveis por `authenticated` (necessário para o app e para as policies) e a proteção de senhas vazadas desligada.
+
+### Pendências importantes
+1. Ligar **proteção contra senhas vazadas** no painel do Supabase (Authentication, Passwords). Não é possível pelo MCP.
+2. Aplicar/validar o `schema.sql` em um banco vazio (não testado).
+3. As migrations do repositório não correspondem 1:1 ao histórico do Supabase (`list_migrations` mostra só as aplicadas via MCP; parte foi aplicada pelo SQL Editor). O `schema.sql` é a referência do estado final.
+4. Testar com duas contas: sincronizar celebração, convidar membro e tentar remover o único coordenador.
+5. Distribuir o APK 0.1.1 aos demais usuários Android (`build\app\outputs\flutter-apk\app-release.apk`).
+
+---
+
 ## Configurações de Ambiente
 
 | Item | Valor |
@@ -46,6 +101,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | Supabase Anon Key | Ver `d:\Vozes_da_Catedral\.env` ou `lib/core/config/supabase_config.dart` |
 | Dispositivo Android | Samsung SM-A546E · serial `RQCW701905N` · Android 16 (API 36) |
 | GitHub CLI | autenticado como `abpaula77` |
+| MCP Supabase | `.kiro/settings/mcp.json` (workspace) aponta para o projeto `npujroyocclobjrpeaed` **com permissão de escrita** (sem `read_only`). Autenticação por OAuth no navegador. Esse arquivo e `.vscode/mcp.json` estão fora do git. Prefira validar com leitura/advisors e confirmar antes de qualquer escrita; o banco é o de produção |
+| Aprovação de PR | o GitHub não deixa o autor aprovar o próprio PR; como o único contribuidor é o dono, o merge é feito direto |
 
 ---
 
@@ -286,7 +343,7 @@ vercel deploy .\build\web --prod
 ```
 - Ícone, splash, nome do app e manifestos Android/Web foram personalizados com a identidade provisória do projeto
 - O release usa `android/key.properties` quando configurado; sem chave usa assinatura debug, apenas para testes
-- `vercel.json` publica `build/web` e redireciona rotas do app para a entrada Flutter
+- `web/vercel.json` (copiado para `build/web` no build) define cabeçalhos de segurança e redireciona rotas para a entrada Flutter; ver "Deploy Web" na seção de varredura
 - `flutter build apk --release` e `flutter build web --release` validados; APK instalado e aberto no Samsung SM-A546E
 - Drift Web configurado com `DriftWebOptions` e runtime WASM compatível com as versões do `pubspec.lock`; login e lista de grupos validados no navegador local
 - O usuário confirmou o deploy e o webapp funcionando em 09/11/2026
@@ -339,7 +396,7 @@ adb devices
 4. Se o build funcionar, o app deve mostrar tela de splash → login
 5. Crie uma conta de teste no app → será redirecionado para onboarding
 6. **Lembre o usuário:** antes de testar grupos/músicas, precisa criar um grupo pelo app
-7. Continue pela **Task 5** (testar o que já está implementado + completar partes faltantes)
+7. Todas as Tasks 1–11 estão concluídas, assim como #22, #23 e #25 e a restrição de e-mail. Continue pela seção **Varredura técnica e de segurança**: #26, #24 e #27 (uma branch por issue).
 
 > Para atualizar o GitHub Projects ao concluir cada task:
 > `gh issue close <NUMBER> --repo abpaula77/Vozes_da_Catedral --comment "Task concluída: <descrição>"`
