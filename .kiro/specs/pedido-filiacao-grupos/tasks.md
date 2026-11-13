@@ -7,14 +7,14 @@ Cada tarefa indica os requisitos que atende. As tarefas de banco vêm primeiro p
 
 ## 1. Banco de dados
 
-- [ ] 1.1 Criar a migration `supabase/migrations/20261116_group_join_requests.sql` com a estrutura
+- [x] 1.1 Criar a migration `supabase/migrations/20261116_group_join_requests.sql` com a estrutura
   - Coluna `grupos.aceita_solicitacoes boolean not null default false`
   - Tabela `solicitacoes_grupo` com FKs, `check` de status e de tamanho da mensagem (280)
   - Índice único parcial `(grupo_id, user_id) where status = 'pendente'` e índice de pendentes por grupo
   - RLS ligado sem policies; `revoke all` de `public`, `anon` e `authenticated`
   - _Requisitos: 1.1, 3.2, 3.3, 5.7, 6.5, 7.2_
 
-- [ ] 1.2 Adicionar à migration as RPCs do coordenador
+- [x] 1.2 Adicionar à migration as RPCs do coordenador
   - `definir_aceita_solicitacoes`, `obter_aceita_solicitacoes`
   - `listar_solicitacoes_pendentes` (nome e foto, nunca e-mail; ignora quem já é membro)
   - `contar_solicitacoes_pendentes`
@@ -22,25 +22,25 @@ Cada tarefa indica os requisitos que atende. As tarefas de banco vêm primeiro p
   - Todas `security definer`, `search_path = ''`, sem acesso para `anon`
   - _Requisitos: 1.2–1.6, 5.1–5.7, 6.2–6.6_
 
-- [ ] 1.3 Adicionar à migration as RPCs do solicitante
+- [x] 1.3 Adicionar à migration as RPCs do solicitante
   - `listar_grupos_abertos` (só abertos e dos quais não é membro, com o status do próprio pedido)
   - `solicitar_entrada` com as validações na ordem do design (mensagem genérica para grupo fechado ou inexistente, espera de 7 dias, duplicado)
   - `listar_minhas_solicitacoes` (sem `decidida_por`) e `cancelar_solicitacao`
   - _Requisitos: 2.1–2.4, 3.1–3.6, 4.1–4.4, 6.7_
 
-- [ ] 1.4 Atualizar `add_group_member_by_email` para marcar como `aprovada` o pedido pendente de quem entra pelo convite
+- [x] 1.4 Atualizar `add_group_member_by_email` para marcar como `aprovada` o pedido pendente de quem entra pelo convite
   - Manter a assinatura e o comportamento atual (não revela se o e-mail existe)
   - _Requisitos: 7.1; decisão 2 do design_
 
-- [ ] 1.5 Escrever `supabase/tests/solicitacoes_grupo.sql` cobrindo todos os cenários da seção "Testes > Banco" do design
+- [x] 1.5 Escrever `supabase/tests/solicitacoes_grupo.sql` cobrindo todos os cenários da seção "Testes > Banco" do design
   - Roda em transação revertida, com duas contas simuladas por `request.jwt.claims`
   - _Requisitos: todos os de banco_
 
-- [ ] 1.6 Aplicar a migration no Supabase, rodar o script de testes e os advisors de segurança
+- [x] 1.6 Aplicar a migration no Supabase, rodar o script de testes e os advisors de segurança
   - Conferir que as contagens de dados não mudaram e que o app atual (Web) continua funcionando
   - _Requisitos: 7.2_
 
-- [ ] 1.7 Atualizar `supabase/schema.sql` com a coluna, a tabela e as RPCs novas
+- [x] 1.7 Atualizar `supabase/schema.sql` com a coluna, a tabela e as RPCs novas
 
 ## 2. Domínio e dados (app)
 
