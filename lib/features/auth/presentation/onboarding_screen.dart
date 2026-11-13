@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
+import '../../profile/data/profile_service.dart';
+import '../../profile/domain/meu_perfil_model.dart';
+import '../../profile/presentation/user_avatar.dart';
 import 'auth_provider.dart';
 
-/// Shown once after first sign-up so the user can choose their role.
+/// First access: confirms the name (and the Google photo, if any).
+///
+/// The former "Coordenador / Membro" choice was removed (issue #42): it was
+/// stored in users.papel but never used; roles are per group.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -12,32 +20,46 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  String _papel = 'membro';
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nomeController;
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    final user = ref.read(supabaseProvider).auth.currentUser;
+    final meta = user?.userMetadata;
+    final sugestao =
+        (meta?['nome'] ?? meta?['full_name'] ?? user?.email?.split('@').first)
+            as String?;
+    _nomeController = TextEditingController(text: sugestao?.trim() ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    super.dispose();
+  }
+
   Future<void> _confirm() async {
+    if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
+    final service = ref.read(profileServiceProvider);
     try {
-      final supabase = ref.read(supabaseProvider);
-      final user = supabase.auth.currentUser;
-      if (user == null) return;
-      await ref
-          .read(authServiceProvider)
-          .createOrUpdateProfile(
-            nome:
-                user.userMetadata?['nome'] ??
-                user.userMetadata?['full_name'] ??
-                user.email?.split('@').first ??
-                'Usuário',
-            foto: user.userMetadata?['avatar_url'],
-            papel: _papel,
-          );
-      // Profile saved — router will redirect automatically via authSessionProvider
+      await service.atualizarNome(_nomeController.text);
+      if (service.fotoDoGoogle != null) {
+        try {
+          await service.usarFotoDoGoogle();
+        } catch (_) {
+          // The photo is optional; it can be set later in "Meu perfil".
+        }
+      }
+      if (mounted) context.go(AppRoutes.groups);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao salvar perfil: $e')));
+        ).showSnackBar(SnackBar(content: Text(mensagemErroPerfil(e))));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -47,6 +69,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final fotoDoGoogle = ref.read(profileServiceProvider).fotoDoGoogle;
 
     return Scaffold(
       body: SafeArea(
@@ -55,150 +78,75 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             padding: const EdgeInsets.all(32),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Icon(
-                    Icons.music_note_rounded,
-                    size: 64,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Bem-vindo ao\nVozes da Catedral',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _nomeController,
+                        builder:
+                            (_, value, __) => UserAvatar(
+                              nome: value.text,
+                              foto: fotoDoGoogle,
+                              radius: 40,
+                            ),
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Como você vai usar o app?',
-                    style: theme.textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  _RoleCard(
-                    selected: _papel == 'coordenador',
-                    icon: Icons.music_note,
-                    title: 'Coordenador',
-                    subtitle:
-                        'Organizo os grupos, monto as celebrações e gerencio o repertório.',
-                    onTap: () => setState(() => _papel = 'coordenador'),
-                  ),
-                  const SizedBox(height: 16),
-                  _RoleCard(
-                    selected: _papel == 'membro',
-                    icon: Icons.person_outline,
-                    title: 'Membro / Cantor',
-                    subtitle:
-                        'Acompanho as missas e visualizo os cantos durante a celebração.',
-                    onTap: () => setState(() => _papel = 'membro'),
-                  ),
-                  const SizedBox(height: 40),
-                  FilledButton(
-                    onPressed: _isLoading ? null : _confirm,
-                    child:
-                        _isLoading
-                            ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                            : const Text('Continuar'),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    Text(
+                      'Bem-vindo ao\nVozes da Catedral',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Como você quer ser chamado nos grupos?',
+                      style: theme.textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    TextFormField(
+                      controller: _nomeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nome',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLength: nomeMaximo,
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.done,
+                      validator: validarNome,
+                      onFieldSubmitted: (_) => _confirm(),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Você pode mudar o nome e a foto depois, em Meu perfil.',
+                      style: theme.textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: _isLoading ? null : _confirm,
+                      child:
+                          _isLoading
+                              ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : const Text('Continuar'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoleCard extends StatelessWidget {
-  final bool selected;
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _RoleCard({
-    required this.selected,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color:
-                selected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outlineVariant,
-            width: selected ? 2 : 1,
-          ),
-          color:
-              selected
-                  ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                  : theme.colorScheme.surface,
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor:
-                  selected
-                      ? theme.colorScheme.primaryContainer
-                      : theme.colorScheme.surfaceContainerHighest,
-              child: Icon(
-                icon,
-                color:
-                    selected
-                        ? theme.colorScheme.onPrimaryContainer
-                        : theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (selected)
-              Icon(
-                Icons.check_circle,
-                color: theme.colorScheme.primary,
-                size: 20,
-              ),
-          ],
         ),
       ),
     );

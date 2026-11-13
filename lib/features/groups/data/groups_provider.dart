@@ -127,7 +127,10 @@ class GruposService {
             .map((row) => (row as Map<String, dynamic>)['user_id'] as String)
             .toList();
     final profiles =
-        await _supabase.from('users').select('id, nome').inFilter('id', userIds)
+        await _supabase
+                .from('users')
+                .select('id, nome, foto')
+                .inFilter('id', userIds)
             as List<dynamic>;
     final profilesById = {
       for (final profile in profiles)
@@ -145,6 +148,7 @@ class GruposService {
         userId: userId,
         nome: profile['nome'] as String,
         papel: PapelGrupo.fromString(membership['papel'] as String),
+        foto: profile['foto'] as String?,
       );
     }).toList();
   }

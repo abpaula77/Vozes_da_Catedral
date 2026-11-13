@@ -1,7 +1,7 @@
 name: vozes_da_catedral
 description: "App para gestão e execução de cantos litúrgicos em missas da Igreja Católica"
 publish_to: 'none'
-version: 0.1.1+2
+version: 0.2.0+3
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -29,6 +29,10 @@ dependencies:
 
   # Keep screen awake during performance mode
   wakelock_plus: ^1.2.10
+
+  # Profile photo (gallery/camera, resized on pick). Pinned: last version
+  # compatible with Dart 3.7.
+  image_picker: 1.2.1
 
 dev_dependencies:
   flutter_test:

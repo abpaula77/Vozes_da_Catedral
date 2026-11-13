@@ -63,9 +63,13 @@ class MembroGrupoModel {
   final String nome;
   final PapelGrupo papel;
 
+  /// Raw `users.foto` value (Google URL or `avatars/...` path), issue #42.
+  final String? foto;
+
   const MembroGrupoModel({
     required this.userId,
     required this.nome,
     required this.papel,
+    this.foto,
   });
 }

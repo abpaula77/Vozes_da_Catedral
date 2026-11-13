@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/router/app_router.dart';
-import '../../auth/presentation/auth_provider.dart';
 import '../data/groups_provider.dart';
+import '../../profile/data/profile_service.dart';
+import '../../profile/presentation/user_avatar.dart';
 import '../data/solicitacoes_provider.dart';
 import '../domain/group_model.dart';
 
@@ -55,6 +56,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
     final pendentesPorGrupo =
         ref.watch(contagemSolicitacoesProvider).valueOrNull ??
         const <String, int>{};
+    final meuPerfil = ref.watch(meuPerfilProvider).valueOrNull;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -78,10 +80,15 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
             tooltip: 'Sincronizar grupos',
             onPressed: _isSyncing ? null : _syncGroups,
           ),
+          // Profile (with "Sair" inside), issue #42.
           IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Sair',
-            onPressed: () => ref.read(authServiceProvider).signOut(),
+            tooltip: 'Meu perfil',
+            onPressed: () => context.pushProfile(),
+            icon: UserAvatar(
+              nome: meuPerfil?.nome ?? '?',
+              foto: meuPerfil?.foto,
+              radius: 16,
+            ),
           ),
         ],
       ),
