@@ -99,33 +99,26 @@ class GroupMembersScreen extends ConsumerWidget {
   Future<void> _addMember(BuildContext context, WidgetRef ref) async {
     final invitation = await showDialog<_MemberInvitation>(
       context: context,
-      builder: (_) => _AddMemberDialog(grupoId: grupoId),
+      builder: (_) => const _AddMemberDialog(),
     );
     if (invitation == null || !context.mounted) return;
 
     try {
-      final service = ref.read(gruposServiceProvider);
-      if (invitation.userId case final userId?) {
-        await service.addMembroPorId(
-          grupoId: grupoId,
-          userId: userId,
-          papel: invitation.papel.value,
-        );
-      } else {
-        await service.addMembro(
-          grupoId: grupoId,
-          email: invitation.email!,
-          papel: invitation.papel.value,
-        );
-      }
+      await ref
+          .read(gruposServiceProvider)
+          .addMembro(
+            grupoId: grupoId,
+            email: invitation.email,
+            papel: invitation.papel.value,
+          );
       ref.invalidate(membrosGrupoProvider(grupoId));
       if (context.mounted) {
+        // The RPC intentionally does not reveal whether the e-mail exists.
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
-              invitation.displayName == null
-                  ? 'Solicitação processada. Se a conta estiver cadastrada, foi adicionada ao grupo.'
-                  : '${invitation.displayName} foi adicionado ao grupo.',
+              'Convite processado. Se houver uma conta com esse e-mail, '
+              'ela foi adicionada ao grupo.',
             ),
           ),
         );
@@ -199,63 +192,38 @@ class _RoleLabel extends StatelessWidget {
 }
 
 class _MemberInvitation {
-  final String? email;
-  final String? userId;
-  final String? displayName;
+  final String email;
   final PapelGrupo papel;
 
-  const _MemberInvitation.byEmail(this.email, this.papel)
-    : userId = null,
-      displayName = null;
-
-  const _MemberInvitation.byUser(this.userId, this.displayName, this.papel)
-    : email = null;
+  const _MemberInvitation(this.email, this.papel);
 }
 
-enum _AddMemberMethod { email, registeredUser }
-
-class _AddMemberDialog extends ConsumerStatefulWidget {
-  final String grupoId;
-
-  const _AddMemberDialog({required this.grupoId});
+/// Invites a member by exact e-mail only (issue #24): coordinators can no
+/// longer browse the list of registered users.
+class _AddMemberDialog extends StatefulWidget {
+  const _AddMemberDialog();
 
   @override
-  ConsumerState<_AddMemberDialog> createState() => _AddMemberDialogState();
+  State<_AddMemberDialog> createState() => _AddMemberDialogState();
 }
 
-class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
+class _AddMemberDialogState extends State<_AddMemberDialog> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _searchController = TextEditingController();
   PapelGrupo _papel = PapelGrupo.membro;
-  _AddMemberMethod _method = _AddMemberMethod.email;
-  Future<List<UsuarioDisponivelGrupoModel>>? _usuariosFuture;
-  String _query = '';
 
   @override
   void dispose() {
     _emailController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
-  void _selectMethod(_AddMemberMethod method) {
-    setState(() {
-      _method = method;
-      if (method == _AddMemberMethod.registeredUser) {
-        _usuariosFuture ??= ref
-            .read(gruposServiceProvider)
-            .getUsuariosDisponiveis(widget.grupoId);
-      }
-    });
-  }
-
-  void _retryUsers() {
-    setState(() {
-      _usuariosFuture = ref
-          .read(gruposServiceProvider)
-          .getUsuariosDisponiveis(widget.grupoId);
-    });
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.pop(
+      context,
+      _MemberInvitation(_emailController.text.trim(), _papel),
+    );
   }
 
   @override
@@ -266,26 +234,35 @@ class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
         key: _formKey,
         child: SizedBox(
           width: 480,
-          height: 440,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SegmentedButton<_AddMemberMethod>(
-                segments: const [
-                  ButtonSegment(
-                    value: _AddMemberMethod.email,
-                    icon: Icon(Icons.email_outlined),
-                    label: Text('Por e-mail'),
-                  ),
-                  ButtonSegment(
-                    value: _AddMemberMethod.registeredUser,
-                    icon: Icon(Icons.people_outline),
-                    label: Text('Usuário cadastrado'),
-                  ),
-                ],
-                selected: {_method},
-                onSelectionChanged:
-                    (selection) => _selectMethod(selection.first),
+              Text(
+                'Informe o e-mail completo da conta. A pessoa precisa já '
+                'ter se cadastrado no app.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'E-mail',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
+                validator: (value) {
+                  final email = value?.trim() ?? '';
+                  if (email.isEmpty || !email.contains('@')) {
+                    return 'Informe um e-mail válido.';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<PapelGrupo>(
@@ -309,8 +286,6 @@ class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
                   if (papel != null) setState(() => _papel = papel);
                 },
               ),
-              const SizedBox(height: 16),
-              Expanded(child: _methodContent()),
             ],
           ),
         ),
@@ -320,134 +295,8 @@ class _AddMemberDialogState extends ConsumerState<_AddMemberDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        if (_method == _AddMemberMethod.email)
-          FilledButton(
-            onPressed: () {
-              if (!_formKey.currentState!.validate()) return;
-              Navigator.pop(
-                context,
-                _MemberInvitation.byEmail(_emailController.text.trim(), _papel),
-              );
-            },
-            child: const Text('Adicionar'),
-          ),
+        FilledButton(onPressed: _submit, child: const Text('Adicionar')),
       ],
-    );
-  }
-
-  Widget _methodContent() {
-    if (_method == _AddMemberMethod.email) {
-      return Align(
-        alignment: Alignment.topCenter,
-        child: TextFormField(
-          controller: _emailController,
-          decoration: const InputDecoration(
-            labelText: 'E-mail',
-            border: OutlineInputBorder(),
-          ),
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
-          validator: (value) {
-            final email = value?.trim() ?? '';
-            if (email.isEmpty || !email.contains('@')) {
-              return 'Informe um e-mail válido.';
-            }
-            return null;
-          },
-        ),
-      );
-    }
-
-    final usersFuture = _usuariosFuture;
-    if (usersFuture == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return FutureBuilder<List<UsuarioDisponivelGrupoModel>>(
-      future: usersFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Erro ao carregar usuários: ${snapshot.error}',
-                  textAlign: TextAlign.center,
-                ),
-                TextButton(
-                  onPressed: _retryUsers,
-                  child: const Text('Tentar novamente'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final users = snapshot.data ?? const <UsuarioDisponivelGrupoModel>[];
-        final query = _query.toLowerCase();
-        final filteredUsers =
-            users
-                .where((user) => user.nome.toLowerCase().contains(query))
-                .toList();
-
-        if (users.isEmpty) {
-          return const Center(
-            child: Text('Não há outros usuários cadastrados para adicionar.'),
-          );
-        }
-
-        return Column(
-          children: [
-            TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Buscar usuário',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) => setState(() => _query = value.trim()),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child:
-                  filteredUsers.isEmpty
-                      ? const Center(child: Text('Nenhum usuário encontrado.'))
-                      : ListView.separated(
-                        itemCount: filteredUsers.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final user = filteredUsers[index];
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: CircleAvatar(
-                              child: Text(
-                                user.nome.isEmpty
-                                    ? '?'
-                                    : user.nome[0].toUpperCase(),
-                              ),
-                            ),
-                            title: Text(user.nome),
-                            trailing: const Icon(Icons.person_add_alt_1),
-                            onTap:
-                                () => Navigator.pop(
-                                  context,
-                                  _MemberInvitation.byUser(
-                                    user.id,
-                                    user.nome,
-                                    _papel,
-                                  ),
-                                ),
-                          );
-                        },
-                      ),
-            ),
-          ],
-        );
-      },
     );
   }
 }
