@@ -42,7 +42,8 @@ class SongDetailScreen extends ConsumerWidget {
         }
 
         final content = SongContent.fromJson(
-            jsonDecode(row.conteudoJson) as Map<String, dynamic>);
+          jsonDecode(row.conteudoJson) as Map<String, dynamic>,
+        );
 
         return Scaffold(
           appBar: AppBar(
@@ -54,38 +55,41 @@ class SongDetailScreen extends ConsumerWidget {
             actions: [
               // Toggle chords
               IconButton(
-                icon: Icon(showChords
-                    ? Icons.music_note
-                    : Icons.music_off_outlined),
+                icon: Icon(
+                  showChords ? Icons.music_note : Icons.music_off_outlined,
+                ),
                 tooltip: showChords ? 'Ocultar cifras' : 'Mostrar cifras',
-                onPressed: () => ref
-                    .read(_showChordsProvider.notifier)
-                    .state = !showChords,
+                onPressed:
+                    () =>
+                        ref.read(_showChordsProvider.notifier).state =
+                            !showChords,
               ),
               // Font size controls
               IconButton(
                 icon: const Icon(Icons.text_decrease),
                 tooltip: 'Diminuir fonte',
-                onPressed: lyricSize > 10
-                    ? () {
-                        ref.read(_lyricFontSizeProvider.notifier).state =
-                            lyricSize - 1;
-                        ref.read(_chordFontSizeProvider.notifier).state =
-                            chordSize - 1;
-                      }
-                    : null,
+                onPressed:
+                    lyricSize > 10
+                        ? () {
+                          ref.read(_lyricFontSizeProvider.notifier).state =
+                              lyricSize - 1;
+                          ref.read(_chordFontSizeProvider.notifier).state =
+                              chordSize - 1;
+                        }
+                        : null,
               ),
               IconButton(
                 icon: const Icon(Icons.text_increase),
                 tooltip: 'Aumentar fonte',
-                onPressed: lyricSize < 32
-                    ? () {
-                        ref.read(_lyricFontSizeProvider.notifier).state =
-                            lyricSize + 1;
-                        ref.read(_chordFontSizeProvider.notifier).state =
-                            chordSize + 1;
-                      }
-                    : null,
+                onPressed:
+                    lyricSize < 32
+                        ? () {
+                          ref.read(_lyricFontSizeProvider.notifier).state =
+                              lyricSize + 1;
+                          ref.read(_chordFontSizeProvider.notifier).state =
+                              chordSize + 1;
+                        }
+                        : null,
               ),
             ],
           ),
