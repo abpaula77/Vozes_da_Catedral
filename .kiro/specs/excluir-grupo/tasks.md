@@ -7,17 +7,17 @@ A migration pode ser aplicada antes do app: nenhuma versão atual exclui grupos.
 
 ## 1. Banco de dados
 
-- [ ] 1.1 Migration `supabase/migrations/20261120_excluir_grupo.sql`: remover a policy de exclusão direta; tabela `grupos_excluidos` (RLS sem policies, `revoke all`)
+- [x] 1.1 Migration `supabase/migrations/20261120_excluir_grupo.sql`: remover a policy de exclusão direta; tabela `grupos_excluidos` (RLS sem policies, `revoke all`)
   - _Requisitos: 1.2, 1.3, 3.4_
-- [ ] 1.2 Função interna `_musicas_exclusivas` e RPC `resumo_exclusao_grupo`
+- [x] 1.2 Função interna `_musicas_exclusivas` e RPC `resumo_exclusao_grupo`
   - _Requisitos: 2.1_
-- [ ] 1.3 RPC `copiar_conteudo_exclusivo` (reaproveita `copy_song_to_group` e `copy_celebration_to_group`)
+- [x] 1.3 RPC `copiar_conteudo_exclusivo` (reaproveita `copy_song_to_group` e `copy_celebration_to_group`)
   - _Requisitos: 4.2–4.6_
-- [ ] 1.4 RPC `excluir_grupo` (coordenador, `for update`, confere o nome, registra, apaga)
+- [x] 1.4 RPC `excluir_grupo` (coordenador, `for update`, confere o nome, registra, apaga)
   - _Requisitos: 1.2, 3.1–3.4_
-- [ ] 1.5 Testes `supabase/tests/excluir_grupo.sql` (inclui a trigger do último coordenador na cascata)
-- [ ] 1.6 Aplicar a migration, rodar os testes e os advisors; conferir que os dados reais não mudaram
-- [ ] 1.7 Atualizar `supabase/schema.sql`
+- [x] 1.5 Testes `supabase/tests/excluir_grupo.sql` (inclui a trigger do último coordenador na cascata)
+- [x] 1.6 Aplicar a migration, rodar os testes e os advisors; conferir que os dados reais não mudaram
+- [x] 1.7 Atualizar `supabase/schema.sql`
 
 ## 2. Banco local e dados (app)
 
