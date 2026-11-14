@@ -13,8 +13,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Estado da `master` (14/11/2026):** inclui #27 (autoria e direitos) e a troca das abas do grupo (Celebrações antes de Hinário). Use `git log --oneline -5` para o commit exato.
-**Produção (14/11/2026):** Web na Vercel e APK release **0.2.0 (code 3)** no Samsung de teste, publicados a partir dessa `master`. Antes de distribuir a outros usuários, suba `version` no `pubspec.yaml` (ainda `0.2.0+3`, mas com #27, #52, #54 e #55 a mais).
+**Estado da `master` (14/11/2026):** inclui #61 (excluir grupo), #27 (autoria e direitos) e a troca das abas do grupo (Celebrações antes de Hinário). Use `git log --oneline -5` para o commit exato.
+**Produção (14/11/2026):** Web na Vercel e APK release **0.2.0 (code 3)** no Samsung de teste, publicados a partir dessa `master`. Antes de distribuir a outros usuários, suba `version` no `pubspec.yaml` (ainda `0.2.0+3`, mas com #27, #52, #54, #55 e #61 a mais).
 
 **Fluxo de trabalho:** uma issue por melhoria e uma branch por issue (`fix/<n>-<nome>` ou `feat/<n>-<nome>`), com PR próprio. Não commitar direto na `master`. Features maiores usam spec em `.kiro/specs/<nome>/` (requisitos → design → tarefas), revisado pelo usuário antes de implementar.
 
@@ -49,7 +49,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | #54 | Link de vídeo por música (`[VIDEO]` no TXT) | #58 (outra sessão) |
 | #55 | Data e hora no padrão brasileiro (`dd/MM/aaaa HH:mm`) | #59 (outra sessão) |
 | #27 | Política de direitos autorais + campos de autoria no hinário | #62, #63 |
-| — | Aba "Celebrações" antes de "Hinário" na tela do grupo | PR seguinte ao #63 |
+| — | Aba "Celebrações" antes de "Hinário" na tela do grupo | #64 |
+| #61 | Excluir grupo (coordenador), cópia do conteúdo exclusivo, cache local por conta | #66 |
 
 ### Issues abertas
 
@@ -57,6 +58,7 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 |-------|------|----------|
 | #51 | E-mails de autenticação com a identidade do app | **Bloqueada:** não há servidor de e-mail (SMTP) nem domínio. Ver "Riscos conhecidos" |
 | #56 | Avaliar notificações para novas celebrações (push/e-mail/Telegram) | Spike criado pela outra sessão; priorizar opções gratuitas |
+| #65 | Cadastro central de músicas: o hinário passa a ser do app e as celebrações, dos grupos | Registrada durante a #61; ainda sem spec |
 
 ---
 
@@ -117,6 +119,19 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 - Os dados chegam ao celular pela sincronização do hinário ("Sincronizar com grupo"); o cache local não se atualiza sozinho.
 - Wish list: importação/atualização em lote dos dados de autoria.
 
+### #61 — Excluir grupo
+- Spec: `.kiro/specs/excluir-grupo/`. Decisões do usuário: **qualquer coordenador** pode excluir; exclusão **imediata, sem lixeira**; aviso só no app; auditoria só no Supabase.
+- **Banco** (`20261120_excluir_grupo.sql`): não há policy de DELETE em `grupos`; o único caminho é a RPC `excluir_grupo(p_grupo_id, p_confirmacao)`, que exige coordenador e confere o nome digitado (`lower(btrim())`). Isso corrigiu uma falha: o criador rebaixado a membro ainda podia apagar o grupo. A cascata apaga membros, músicas, celebrações, itens e solicitações; a trigger `protect_last_coordinator` não bloqueia.
+  - `resumo_exclusao_grupo` → membros, músicas, músicas exclusivas, celebrações, solicitações pendentes.
+  - `copiar_conteudo_exclusivo(p_origem, p_destino)`: exige coordenar os dois grupos; reaproveita `copy_song_to_group` (idempotente) e `copy_celebration_to_group` (**não** idempotente: a tela desabilita o botão depois da primeira cópia).
+  - Música exclusiva: sem cópia em outro grupo e que não seja cópia idêntica de música de outro grupo (cópia editada conta como exclusiva). Função interna `_musicas_exclusivas`, sem `EXECUTE` para o app.
+  - Auditoria em `grupos_excluidos` (RLS sem policies + `revoke all`; consultar pelo SQL Editor/MCP).
+  - Testes: `supabase/tests/excluir_grupo.sql` (32 verificações).
+- **App:** tela de membros > "Zona de perigo" (só coordenador) > resumo → cópia opcional para outro grupo que o usuário coordena → digitar o nome → volta para Meus Grupos com "Grupo X excluído.". Arquivo: `lib/features/groups/presentation/delete_group_dialogs.dart`.
+- **Aviso aos membros:** `syncGrupos()` devolve os nomes dos grupos que sumiram do servidor e apaga o conteúdo local deles; Meus Grupos mostra "Você não participa mais do grupo X." (vale também para quem foi removido do grupo). A sincronização feita pela tela Encontrar grupos limpa, mas não mostra o aviso.
+- **Cache local por conta (Drift v5):** tabela `AppMetaLocal` com `dono_cache`. Quando entra outra conta no aparelho, `garantirDonoDoCache` apaga todo o cache antes de qualquer leitura; sair da conta não apaga. `cacheLocalProntoProvider` (em `database_provider.dart`) é aguardado por todos os providers que leem o banco local e pelo `syncGrupos`. **Providers novos que leem o Drift devem aguardar esse provider.**
+- Aceito pelo usuário: alterações offline do grupo excluído se perdem; membros offline veem o conteúdo até sincronizar.
+
 ### Tela do grupo
 - As abas são **Celebrações | Hinário**, nessa ordem (a primeira abre por padrão): a maioria dos membros entra no grupo para ver o que vai cantar.
 
@@ -140,19 +155,19 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 
 ## Estado do banco Supabase (14/11/2026)
 - 26 funções `security definer` em `public`, todas com `search_path` vazio; `anon` sem `EXECUTE` nas RPCs do app.
-- Advisors: avisos esperados de RPCs executáveis por `authenticated`, `rls_enabled_no_policy` em `solicitacoes_grupo` (intencional) e a proteção de senhas vazadas desligada (risco aceito: só no plano Pro).
+- Advisors: avisos esperados de RPCs executáveis por `authenticated`, `rls_enabled_no_policy` em `solicitacoes_grupo` e `grupos_excluidos` (intencional) e a proteção de senhas vazadas desligada (risco aceito: só no plano Pro).
 - `public.users`: o cliente lê só `id`, `nome`, `papel` e `foto`; `email` bloqueado. Perfil gravado pelas RPCs `atualizar_meu_nome`, `definir_minha_foto` e `update_my_profile` (versões antigas do app).
 - Triggers: `set_criado_por` (`musicas`, `celebracoes`), `protect_last_coordinator` (`membros_grupo`).
-- Contagens: 6 usuários, 5 grupos, 12 participações, 211 músicas, 3 celebrações, 4 solicitações, 2 fotos enviadas.
+- Contagens (14/11/2026, depois do teste manual da #61): 6 usuários, 4 grupos, 11 participações, 211 músicas, 3 celebrações, 4 solicitações, 2 fotos enviadas, 1 registro em `grupos_excluidos` (o grupo "teste de grupo", com 1 membro e 1 música).
 - **APKs anteriores a 0.1.1 não funcionam** (liam `email`). Todos os usuários Android precisam de 0.1.1 ou superior; para as features recentes, 0.2.0.
-- Testes do banco (rodam em transação revertida; rode de novo após mexer nessas funções): `supabase/tests/solicitacoes_grupo.sql`, `perfil_usuario.sql`, `papel_membro.sql`. Eles terminam sempre com um erro `RESULTADO: N ok, M falhas` — é o relatório, não uma falha.
+- Testes do banco (rodam em transação revertida; rode de novo após mexer nessas funções): `supabase/tests/solicitacoes_grupo.sql`, `perfil_usuario.sql`, `papel_membro.sql`, `excluir_grupo.sql`. Eles terminam sempre com um erro `RESULTADO: N ok, M falhas` — é o relatório, não uma falha.
 
 ## Riscos conhecidos e pendências
 1. **E-mail de confirmação (#51):** o SMTP padrão do Supabase só envia para endereços pré-autorizados (time do projeto) e tem limite baixo por hora. Pessoas de fora que se cadastrarem por **e-mail e senha** podem não receber a confirmação nem a recuperação de senha. Login com Google não é afetado. Resolver antes de abrir o app a mais usuários.
 2. Aplicar/validar o `schema.sql` em um banco vazio (não testado).
 3. As migrations do repositório não correspondem 1:1 ao histórico do Supabase (parte foi aplicada pelo SQL Editor). O `schema.sql` é a referência do estado final.
 4. Distribuir o APK 0.2.x aos demais usuários Android (subir a versão antes).
-5. Cobertura de testes do app ainda baixa em sync e telas (47 testes, focados em modelos, parser, datas e no quadro de autoria).
+5. Cobertura de testes do app ainda baixa em sync e telas (56 testes, focados em modelos, parser, datas, quadro de autoria, banco local em memória e diálogos de exclusão de grupo).
 6. Revisar a margem inferior das demais telas que rolam (ver "Barra de navegação do Android").
 
 ---
@@ -211,7 +226,7 @@ lib/
 ├── app.dart                              MaterialApp.router + temas + localização pt_BR
 ├── core/
 │   ├── config/supabase_config.dart       URL + chave publicável via dart-define
-│   ├── database/                         Drift: 6 tabelas, schema v4, DAOs, provider
+│   ├── database/                         Drift: 7 tabelas, schema v5, DAOs, provider, cache por conta (#61)
 │   ├── domain/momento_liturgico.dart     12 momentos do Rito Romano
 │   ├── router/app_router.dart            GoRouter + redirect auth + nav helpers
 │   ├── theme/app_theme.dart              tema claro/escuro (dark otimizado altar)
@@ -232,7 +247,8 @@ lib/
     │       ├── groups_screen.dart         Meus Grupos: avatar do perfil, Encontrar grupos, badge de pendentes
     │       ├── explore_groups_screen.dart Encontrar grupos e minhas solicitações (#41)
     │       ├── group_detail_screen.dart   tabs: Celebrações | Hinário
-    │       ├── group_members_screen.dart  membros com foto, convite, menu de papel/remoção (#52)
+    │       ├── group_members_screen.dart  membros com foto, convite, menu de papel/remoção (#52), Zona de perigo (#61)
+    │       ├── delete_group_dialogs.dart  resumo, cópia, confirmação pelo nome (#61)
     │       └── join_requests_widgets.dart switch "Aceitar solicitações" e pendentes (#41)
     ├── profile/                           (#42)
     │   ├── domain/meu_perfil_model.dart   tipos de foto, validação do nome
@@ -485,7 +501,7 @@ Testes do banco: cole o conteúdo de `supabase/tests/*.sql` no SQL Editor (ou ex
 4. Se o build funcionar, o app deve mostrar tela de splash → login
 5. Crie uma conta de teste no app → será redirecionado para onboarding
 6. **Lembre o usuário:** antes de testar grupos/músicas, precisa criar um grupo pelo app
-7. Estão concluídas e validadas: Tasks 1–11, varredura de segurança (#22–#26), #27, #41, #42, #52, #54 e #55. Abertas: **#51** (bloqueada sem servidor de e-mail) e **#56** (spike de notificações). Antes de distribuir o APK a outras pessoas, subir a versão. Uma branch por issue; validar antes do merge.
+7. Estão concluídas e validadas: Tasks 1–11, varredura de segurança (#22–#26), #27, #41, #42, #52, #54, #55 e #61. Abertas: **#51** (bloqueada sem servidor de e-mail), **#56** (spike de notificações) e **#65** (cadastro central de músicas). Antes de distribuir o APK a outras pessoas, subir a versão. Uma branch por issue; validar antes do merge.
 
 > Para atualizar o GitHub Projects ao concluir cada task:
 > `gh issue close <NUMBER> --repo abpaula77/Vozes_da_Catedral --comment "Task concluída: <descrição>"`
