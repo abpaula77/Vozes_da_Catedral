@@ -8,6 +8,7 @@ import '../../groups/data/groups_provider.dart';
 import '../../groups/domain/group_model.dart';
 import '../../songs/data/songs_provider.dart';
 import '../../songs/domain/song_model.dart';
+import '../../songs/presentation/video_link_button.dart';
 import '../data/celebrations_provider.dart';
 import '../domain/celebration_model.dart';
 
@@ -587,6 +588,11 @@ class _CelebrationDetailScreenState
           }
           final songs = songsAsync.valueOrNull ?? const <SongModel>[];
           final songTitles = {for (final song in songs) song.id: song.titulo};
+          final songVideos = {
+            for (final song in songs)
+              if (song.conteudoJson.videoUrl != null)
+                song.id: song.conteudoJson.videoUrl!,
+          };
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
@@ -609,6 +615,7 @@ class _CelebrationDetailScreenState
                 _CelebrationMomentCard(
                   item: item,
                   songTitle: songTitles[item.musicaId],
+                  videoUrl: songVideos[item.musicaId],
                   isCoordenador: widget.isCoordenador,
                   onChooseSong: () => _chooseSong(item),
                   onEditNote: () => _editNote(item),
@@ -624,6 +631,7 @@ class _CelebrationDetailScreenState
 class _CelebrationMomentCard extends StatelessWidget {
   final ItensCelebracaoLocalData item;
   final String? songTitle;
+  final String? videoUrl;
   final bool isCoordenador;
   final VoidCallback onChooseSong;
   final VoidCallback onEditNote;
@@ -631,6 +639,7 @@ class _CelebrationMomentCard extends StatelessWidget {
   const _CelebrationMomentCard({
     required this.item,
     required this.songTitle,
+    required this.videoUrl,
     required this.isCoordenador,
     required this.onChooseSong,
     required this.onEditNote,
@@ -660,14 +669,19 @@ class _CelebrationMomentCard extends StatelessWidget {
                         ? 'Nenhuma música selecionada'
                         : 'Música não encontrada no hinário'),
               ),
-              trailing:
-                  isCoordenador
-                      ? IconButton(
-                        tooltip: 'Selecionar música',
-                        icon: const Icon(Icons.edit),
-                        onPressed: onChooseSong,
-                      )
-                      : null,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (videoUrl != null)
+                    VideoLinkButton(url: videoUrl!, compact: true),
+                  if (isCoordenador)
+                    IconButton(
+                      tooltip: 'Selecionar música',
+                      icon: const Icon(Icons.edit),
+                      onPressed: onChooseSong,
+                    ),
+                ],
+              ),
             ),
             if (item.observacao?.isNotEmpty == true)
               Padding(

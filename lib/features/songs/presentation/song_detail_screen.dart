@@ -100,6 +100,7 @@ class SongDetailScreen extends ConsumerWidget {
               lyricFontSize: lyricSize,
               chordFontSize: chordSize,
               showChords: showChords,
+              showVideoLink: true,
             ),
           ),
         );

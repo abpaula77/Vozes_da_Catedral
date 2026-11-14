@@ -68,6 +68,7 @@ class SongContent {
   final int? bpm;
   final List<String> categorias;
   final List<MomentoLiturgico> momentosLiturgicos;
+  final String? videoUrl;
   final List<SongSection> secoes;
 
   const SongContent({
@@ -76,6 +77,7 @@ class SongContent {
     this.bpm,
     required this.categorias,
     this.momentosLiturgicos = const [],
+    this.videoUrl,
     required this.secoes,
   });
 
@@ -86,6 +88,7 @@ class SongContent {
     'categorias': categorias,
     'momentosLiturgicos':
         momentosLiturgicos.map((moment) => moment.name).toList(),
+    'videoUrl': videoUrl,
     'secoes': secoes.map((s) => s.toJson()).toList(),
   };
 
@@ -95,6 +98,7 @@ class SongContent {
     bpm: json['bpm'] as int?,
     categorias: List<String>.from(json['categorias'] as List? ?? []),
     momentosLiturgicos: _momentosFromJson(json['momentosLiturgicos']),
+    videoUrl: json['videoUrl'] as String?,
     secoes:
         (json['secoes'] as List)
             .map((s) => SongSection.fromJson(s as Map<String, dynamic>))

@@ -9,6 +9,7 @@ import '../../../core/domain/momento_liturgico.dart';
 /// [TOM]: D
 /// [CATEGORIA]: santo
 /// [BPM]: 80
+/// [VIDEO]: https://www.youtube.com/watch?v=...
 ///
 /// [ESTROFE]
 /// D        F#m
@@ -51,6 +52,7 @@ class SongParser {
     String? titulo;
     String? tom;
     int? bpm;
+    String? videoUrl;
     final categorias = <String>[];
     final momentosLiturgicos = <MomentoLiturgico>[];
     final secoes = <SongSection>[];
@@ -98,6 +100,15 @@ class SongParser {
             break;
           case 'BPM':
             bpm = int.tryParse(value);
+            break;
+          case 'VIDEO':
+            videoUrl = normalizeVideoUrl(value);
+            if (videoUrl == null) {
+              throw SongParseException(
+                'Link de vídeo inválido: "$value". Use um endereço '
+                'http:// ou https://.',
+              );
+            }
             break;
           case 'CATEGORIA':
           case 'CATEGORIAS':
@@ -177,8 +188,17 @@ class SongParser {
       bpm: bpm,
       categorias: categorias,
       momentosLiturgicos: momentosLiturgicos,
+      videoUrl: videoUrl,
       secoes: secoes,
     );
+  }
+
+  /// Returns [value] as an absolute http(s) URL with a host, or null.
+  static String? normalizeVideoUrl(String value) {
+    final uri = Uri.tryParse(value.trim());
+    if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return null;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+    return uri.toString();
   }
 
   /// Heuristic: a line is a chord line if it contains only chord notation characters

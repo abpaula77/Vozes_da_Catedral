@@ -15,6 +15,7 @@ músicas do grupo para sincronizá-la.
 [CATEGORIA]: entrada, advento
 [MOMENTO]: entrada, comunhao
 [BPM]: 92
+[VIDEO]: https://www.youtube.com/watch?v=XXXXXXXXXXX
 
 [ESTROFE 1]
 D                 A
@@ -48,6 +49,9 @@ Os campos devem ficar no início do arquivo, antes da primeira seção:
 | `[MOMENTO]` | Não | Um ou mais momentos litúrgicos separados por vírgulas. Use os identificadores listados abaixo. |
 | `[MOMENTOS]` | Não | Forma alternativa de `[MOMENTO]`. |
 | `[BPM]` | Não | Andamento em número inteiro, por exemplo `92`. |
+| `[VIDEO]` | Não | Link de um vídeo da música (YouTube, Vimeo ou outra plataforma). Deve ser um endereço completo `http://` ou `https://`. |
+
+O link de `[VIDEO]` aparece como botão "Assistir vídeo" no hinário (lista e detalhe da música) e na montagem da celebração. Ele não aparece no modo performance. Um link inválido faz a importação ou a edição falhar com uma mensagem de erro. Arquivos sem `[VIDEO]` continuam válidos.
 
 Categorias também podem ser informadas em mais de uma linha `[CATEGORIA]`. O app as normaliza para minúsculas.
 
