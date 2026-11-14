@@ -129,9 +129,17 @@ class _ProfileViewState extends ConsumerState<_ProfileView> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // On the web (computer) the picker opens the file dialog.
                 ListTile(
-                  leading: const Icon(Icons.photo_library_outlined),
-                  title: const Text('Escolher da galeria'),
+                  leading: Icon(
+                    kIsWeb
+                        ? Icons.upload_file_outlined
+                        : Icons.photo_library_outlined,
+                  ),
+                  title: Text(
+                    kIsWeb ? 'Escolher arquivo' : 'Escolher da galeria',
+                  ),
+                  subtitle: const Text('JPEG, PNG ou WebP'),
                   onTap: () => Navigator.pop(sheetContext, _AcaoFoto.galeria),
                 ),
                 if (!kIsWeb)
@@ -140,10 +148,21 @@ class _ProfileViewState extends ConsumerState<_ProfileView> {
                     title: const Text('Tirar foto'),
                     onTap: () => Navigator.pop(sheetContext, _AcaoFoto.camera),
                   ),
-                if (perfil.fotoDoGoogle != null && !perfil.usaFotoDoGoogle)
+                // Always listed when the account has a Google photo; marked
+                // (and disabled) when it is already the profile photo.
+                if (perfil.fotoDoGoogle != null)
                   ListTile(
                     leading: const Icon(Icons.account_circle_outlined),
                     title: const Text('Usar a foto do Google'),
+                    subtitle:
+                        perfil.usaFotoDoGoogle
+                            ? const Text('Em uso no seu perfil')
+                            : null,
+                    trailing:
+                        perfil.usaFotoDoGoogle
+                            ? const Icon(Icons.check_circle)
+                            : null,
+                    enabled: !perfil.usaFotoDoGoogle,
                     onTap: () => Navigator.pop(sheetContext, _AcaoFoto.google),
                   ),
                 if (perfil.tipoFoto != TipoFoto.nenhuma)
@@ -172,11 +191,16 @@ class _ProfileViewState extends ConsumerState<_ProfileView> {
             maxHeight: 512,
             imageQuality: 80,
           );
-        } catch (_) {
+        } catch (error) {
+          debugPrint('Falha ao escolher imagem: $error');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Não foi possível abrir a galeria ou a câmera.'),
+              SnackBar(
+                content: Text(
+                  kIsWeb
+                      ? 'Não foi possível abrir a seleção de arquivo.'
+                      : 'Não foi possível abrir a galeria ou a câmera.',
+                ),
               ),
             );
           }
