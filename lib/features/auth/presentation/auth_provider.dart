@@ -24,9 +24,14 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
   return session.valueOrNull != null;
 });
 
-/// Current user ID (null when logged out)
+/// Current user ID (null when logged out).
+///
+/// Watches the auth session so it is recomputed on every sign-in, sign-out
+/// and account switch in the same tab (#52). Before, the first value was
+/// cached and the previous account's id kept being used after a switch.
 final currentUserIdProvider = Provider<String?>((ref) {
-  return ref.watch(supabaseProvider).auth.currentUser?.id;
+  final session = ref.watch(authSessionProvider).valueOrNull;
+  return session?.user.id ?? ref.watch(supabaseProvider).auth.currentUser?.id;
 });
 
 /// Current user profile fetched from Supabase `users` table

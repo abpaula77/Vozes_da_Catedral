@@ -188,9 +188,11 @@ class ProfileService {
 
 final profileServiceProvider = Provider<ProfileService>(ProfileService.new);
 
-final meuPerfilProvider = FutureProvider.autoDispose<MeuPerfilModel?>(
-  (ref) => ref.watch(profileServiceProvider).carregar(),
-);
+final meuPerfilProvider = FutureProvider.autoDispose<MeuPerfilModel?>((ref) {
+  // Reload after an account switch (#52).
+  ref.watch(currentUserIdProvider);
+  return ref.watch(profileServiceProvider).carregar();
+});
 
 /// Turns an error from the profile flow into a message for the user.
 String mensagemErroPerfil(Object error) {
