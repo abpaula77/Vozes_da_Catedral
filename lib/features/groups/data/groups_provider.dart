@@ -28,6 +28,8 @@ final gruposProvider = StreamProvider<List<GrupoModel>>((ref) {
 
 final membrosGrupoProvider =
     FutureProvider.family<List<MembroGrupoModel>, String>((ref, grupoId) {
+      // Reload after an account switch (#52).
+      ref.watch(currentUserIdProvider);
       return ref.watch(gruposServiceProvider).getMembros(grupoId);
     });
 
@@ -168,6 +170,26 @@ class GruposService {
         'p_papel': papel,
       },
     );
+  }
+
+  /// Promote or demote a member (Coordenador only, #52). The database keeps
+  /// at least one coordinator per group.
+  Future<void> alterarPapel({
+    required String grupoId,
+    required String userId,
+    required PapelGrupo papel,
+  }) async {
+    await _supabase.rpc(
+      'alterar_papel_membro',
+      params: {
+        'p_grupo_id': grupoId,
+        'p_user_id': userId,
+        'p_papel': papel.value,
+      },
+    );
+    // If the current user changed their own role, refresh the local cache
+    // (it drives coordinator-only actions in the UI).
+    if (userId == _userId) await syncGrupos();
   }
 
   /// Remove a member from a group (Coordenador only)

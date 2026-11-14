@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 import '../../auth/presentation/auth_provider.dart';
 import '../data/groups_provider.dart';
@@ -87,13 +88,17 @@ class GroupMembersScreen extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _RoleLabel(papel: member.papel),
-                          if (grupo.isCoordenador &&
-                              member.userId != currentUserId)
-                            IconButton(
-                              tooltip: 'Remover membro',
-                              icon: const Icon(Icons.person_remove_outlined),
-                              onPressed:
-                                  () => _removeMember(context, ref, member),
+                          if (grupo.isCoordenador)
+                            _MemberMenu(
+                              member: member,
+                              isSelf: member.userId == currentUserId,
+                              onAction:
+                                  (action) => _onMemberAction(
+                                    context,
+                                    ref,
+                                    member,
+                                    action,
+                                  ),
                             ),
                         ],
                       ),
@@ -144,6 +149,88 @@ class GroupMembersScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _onMemberAction(
+    BuildContext context,
+    WidgetRef ref,
+    MembroGrupoModel member,
+    _MemberAction action,
+  ) async {
+    switch (action) {
+      case _MemberAction.promover:
+        await _changeRole(context, ref, member, PapelGrupo.coordenador);
+      case _MemberAction.rebaixar:
+        await _changeRole(context, ref, member, PapelGrupo.membro);
+      case _MemberAction.remover:
+        await _removeMember(context, ref, member);
+    }
+  }
+
+  /// Promote or demote (#52). Demoting asks for confirmation; the database
+  /// rejects leaving the group without a coordinator.
+  Future<void> _changeRole(
+    BuildContext context,
+    WidgetRef ref,
+    MembroGrupoModel member,
+    PapelGrupo papel,
+  ) async {
+    final isSelf = member.userId == ref.read(currentUserIdProvider);
+    if (!papel.isCoordenador) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder:
+            (dialogContext) => AlertDialog(
+              title: Text(
+                isSelf ? 'Deixar de ser coordenador?' : 'Tornar membro?',
+              ),
+              content: Text(
+                isSelf
+                    ? 'Você não poderá mais gerenciar o grupo, as músicas e '
+                        'as celebrações.'
+                    : '${member.nome} não poderá mais gerenciar o grupo, as '
+                        'músicas e as celebrações.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: const Text('Confirmar'),
+                ),
+              ],
+            ),
+      );
+      if (confirmed != true || !context.mounted) return;
+    }
+
+    try {
+      await ref
+          .read(gruposServiceProvider)
+          .alterarPapel(grupoId: grupoId, userId: member.userId, papel: papel);
+      ref.invalidate(membrosGrupoProvider(grupoId));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              papel.isCoordenador
+                  ? '${member.nome} agora é coordenador.'
+                  : isSelf
+                  ? 'Você agora é membro do grupo.'
+                  : '${member.nome} agora é membro.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_mensagemErro(error))));
+      }
+    }
+  }
+
   Future<void> _removeMember(
     BuildContext context,
     WidgetRef ref,
@@ -176,11 +263,77 @@ class GroupMembersScreen extends ConsumerWidget {
       ref.invalidate(membrosGrupoProvider(grupoId));
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao remover membro: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_mensagemErro(error))));
       }
     }
+  }
+}
+
+/// Database messages are written for users (e.g. "O grupo precisa ter pelo
+/// menos um coordenador"); anything else is most likely a connection problem.
+String _mensagemErro(Object error) {
+  if (error is PostgrestException && error.message.trim().isNotEmpty) {
+    return error.message;
+  }
+  return 'Não foi possível concluir. Verifique a conexão e tente novamente.';
+}
+
+enum _MemberAction { promover, rebaixar, remover }
+
+/// Coordinator actions for one member (#52).
+class _MemberMenu extends StatelessWidget {
+  final MembroGrupoModel member;
+  final bool isSelf;
+  final ValueChanged<_MemberAction> onAction;
+
+  const _MemberMenu({
+    required this.member,
+    required this.isSelf,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isCoordinator = member.papel.isCoordenador;
+    // For themselves, a coordinator can only step down (removing oneself is
+    // "leaving the group", which is not part of this screen).
+    if (isSelf && !isCoordinator) return const SizedBox.shrink();
+
+    return PopupMenuButton<_MemberAction>(
+      tooltip: 'Opções do membro',
+      onSelected: onAction,
+      itemBuilder:
+          (_) => [
+            if (!isCoordinator)
+              const PopupMenuItem(
+                value: _MemberAction.promover,
+                child: ListTile(
+                  leading: Icon(Icons.verified_user_outlined),
+                  title: Text('Tornar coordenador'),
+                ),
+              ),
+            if (isCoordinator)
+              PopupMenuItem(
+                value: _MemberAction.rebaixar,
+                child: ListTile(
+                  leading: const Icon(Icons.person_outline),
+                  title: Text(
+                    isSelf ? 'Deixar de ser coordenador' : 'Tornar membro',
+                  ),
+                ),
+              ),
+            if (!isSelf)
+              const PopupMenuItem(
+                value: _MemberAction.remover,
+                child: ListTile(
+                  leading: Icon(Icons.person_remove_outlined),
+                  title: Text('Remover do grupo'),
+                ),
+              ),
+          ],
+    );
   }
 }
 
