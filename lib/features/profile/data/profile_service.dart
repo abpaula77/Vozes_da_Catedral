@@ -31,11 +31,22 @@ class ProfileService {
   }
 
   /// Google photo of the signed-in account, if any.
+  ///
+  /// Read from the session's user metadata and, as a fallback, from the
+  /// linked Google identity (accounts created by e-mail and linked to Google
+  /// later may only have it there).
   String? get fotoDoGoogle {
-    final meta = _supabase.auth.currentUser?.userMetadata;
-    for (final chave in ['avatar_url', 'picture']) {
-      final valor = meta?[chave];
-      if (valor is String && valor.startsWith('https://')) return valor;
+    final user = _supabase.auth.currentUser;
+    final fontes = <Map<String, dynamic>?>[
+      user?.userMetadata,
+      for (final identidade in user?.identities ?? const <UserIdentity>[])
+        if (identidade.provider == 'google') identidade.identityData,
+    ];
+    for (final fonte in fontes) {
+      for (final chave in ['avatar_url', 'picture']) {
+        final valor = fonte?[chave];
+        if (valor is String && valor.startsWith('https://')) return valor;
+      }
     }
     return null;
   }

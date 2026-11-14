@@ -16,6 +16,7 @@ declare
   v_d uuid := gen_random_uuid();
   v_g uuid; v_g2 uuid; v_mus uuid; v_cel uuid;
   v_google text := 'https://lh3.googleusercontent.com/a/teste-perfil';
+  v_ident text := 'https://lh3.googleusercontent.com/a/teste-identidade';
   v_txt text; v_n int; v_bool boolean;
   ok int := 0;
   falhas text := '';
@@ -34,6 +35,10 @@ begin
        jsonb_build_object('nome', 'Teste X')),
     (v_d, 'teste-d-' || v_d || '@example.invalid', 'authenticated', 'authenticated',
        jsonb_build_object('nome', 'Teste D'));
+
+  -- B has a Google photo only in a linked identity (not in user metadata).
+  insert into auth.identities (provider_id, user_id, identity_data, provider)
+  values (v_b::text, v_b, jsonb_build_object('sub', v_b::text, 'picture', v_ident), 'google');
 
   select count(*) into v_n from public.users where id in (v_a, v_b, v_x, v_d);
   if v_n <> 4 then
@@ -97,6 +102,12 @@ begin
   if not public._foto_valida('avatars/' || v_a || '/../x.jpg') then ok := ok + 1; else falhas := falhas || 'F04 path traversal aceito; '; end if;
   if not public._foto_valida('https://evil.example/pixel.png') then ok := ok + 1; else falhas := falhas || 'F05 URL externa aceita; '; end if;
   if public._foto_valida(v_google) then ok := ok + 1; else falhas := falhas || 'F06 foto do Google recusada; '; end if;
+  if not public._foto_valida(v_ident) then ok := ok + 1; else falhas := falhas || 'G01 A aceitou foto da identidade de B; '; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', v_b, 'role', 'authenticated')::text, true);
+  if public._foto_valida(v_ident) then ok := ok + 1; else falhas := falhas || 'G02 identidade Google propria recusada; '; end if;
+  if not public._foto_valida(v_google) then ok := ok + 1; else falhas := falhas || 'G03 B aceitou foto Google de A; '; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
 
   set local role authenticated;
 
