@@ -13,8 +13,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit de código na `master`:** `711d1da` — merge do PR #59 (data e hora no padrão brasileiro, #55)
-**Produção (14/11/2026):** Web publicado na Vercel a partir de `711d1da`; APK release **0.2.0 (code 3)** do mesmo commit instalado no Samsung de teste. Antes de distribuir a outros usuários, suba `version` no `pubspec.yaml` (ainda `0.2.0+3`, mas com #52, #54 e #55 a mais).
+**Estado da `master` (14/11/2026):** inclui #27 (autoria e direitos) e a troca das abas do grupo (Celebrações antes de Hinário). Use `git log --oneline -5` para o commit exato.
+**Produção (14/11/2026):** Web na Vercel e APK release **0.2.0 (code 3)** no Samsung de teste, publicados a partir dessa `master`. Antes de distribuir a outros usuários, suba `version` no `pubspec.yaml` (ainda `0.2.0+3`, mas com #27, #52, #54 e #55 a mais).
 
 **Fluxo de trabalho:** uma issue por melhoria e uma branch por issue (`fix/<n>-<nome>` ou `feat/<n>-<nome>`), com PR próprio. Não commitar direto na `master`. Features maiores usam spec em `.kiro/specs/<nome>/` (requisitos → design → tarefas), revisado pelo usuário antes de implementar.
 
@@ -48,12 +48,13 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | #52 | Promover/rebaixar membros + troca de conta na mesma aba | #53 |
 | #54 | Link de vídeo por música (`[VIDEO]` no TXT) | #58 (outra sessão) |
 | #55 | Data e hora no padrão brasileiro (`dd/MM/aaaa HH:mm`) | #59 (outra sessão) |
+| #27 | Política de direitos autorais + campos de autoria no hinário | #62, #63 |
+| — | Aba "Celebrações" antes de "Hinário" na tela do grupo | PR seguinte ao #63 |
 
 ### Issues abertas
 
 | Issue | Tema | Situação |
 |-------|------|----------|
-| #27 | Política de direitos autorais do catálogo compartilhado | Decisão do usuário, não é código |
 | #51 | E-mails de autenticação com a identidade do app | **Bloqueada:** não há servidor de e-mail (SMTP) nem domínio. Ver "Riscos conhecidos" |
 | #56 | Avaliar notificações para novas celebrações (push/e-mail/Telegram) | Spike criado pela outra sessão; priorizar opções gratuitas |
 
@@ -107,6 +108,18 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 - **#54:** link de vídeo opcional por música, pela linha `[VIDEO]: https://...` no TXT (documentado em `docs/formato-musicas.md`). Fica dentro de `conteudo_json`; sem migration. Abre fora do app (`url_launcher`, só http/https, validado de novo antes de abrir). Aparece no hinário e no montador, não no modo performance.
 - **#55:** utilitário `lib/core/utils/date_format_br.dart` (`intl`): `dd/MM/aaaa` e `HH:mm`, seletor de hora em 24h. Usa o fuso **do aparelho** (a issue pedia `America/Sao_Paulo`; mesmo resultado para quem está no Brasil).
 
+### #27 — Autoria e direitos autorais
+- Política em `docs/direitos-autorais.md`: catálogo compartilhado de propósito, **sem música privada** e **sem bloqueios** no app; campos informativos para manutenção.
+- Linhas opcionais no cabeçalho do TXT: `[LETRISTA]`, `[COMPOSITOR]`, `[EDITORA]`, `[DIREITOS]` (`dominio-publico` | `protegida` [até AAAA] | `nao-verificado`) e `[LICENCA_APP]` (`pendente` | `autorizada` | `nao-necessaria` | `negada`). Ficam em `conteudo_json` (sem migration); valores aceitam acento e maiúsculas; valor inválido falha a importação/edição.
+- Aparecem **só no hinário**: quadro no fim do detalhe da música, opção "Autoria e direitos" no menu ⋮ de cada música e filtro por licença ("Licença não informada" serve para achar o que falta revisar). **Não** aparecem nas celebrações nem no modo performance (decisão do usuário).
+- A lista do hinário agora tem um menu ⋮ por música (Autoria e direitos; Classificar, Editar e Excluir para coordenadores) no lugar dos botões.
+- O parser passou a aceitar nomes de campo com acento (`[TÍTULO]`, `[LICENÇA_APP]`); antes eram ignorados em silêncio.
+- Os dados chegam ao celular pela sincronização do hinário ("Sincronizar com grupo"); o cache local não se atualiza sozinho.
+- Wish list: importação/atualização em lote dos dados de autoria.
+
+### Tela do grupo
+- As abas são **Celebrações | Hinário**, nessa ordem (a primeira abre por padrão): a maioria dos membros entra no grupo para ver o que vai cantar.
+
 ---
 
 ## Deploy Web (importante)
@@ -115,13 +128,15 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 - O vínculo do projeto fica em `build/web/.vercel/project.json` (projeto `vozes-da-catedral`, fora do git). Se precisar publicar de outra pasta (ex.: cópia limpa da `master`), copie esse arquivo para o `build/web` dela.
 - **CSP:** libera `self`, `*.supabase.co` (https/wss), `www.gstatic.com`, `fonts.gstatic.com`, `*.googleusercontent.com` (em `connect-src`), `wasm-unsafe-eval` e workers `blob:`. No Flutter Web (CanvasKit) **imagens são baixadas com `fetch`**, então valem as regras de `connect-src`, não só de `img-src`. Um recurso bloqueado aparece no Console como "Refused to…".
 - **Armadilha do cache de plugins:** depois de adicionar um pacote com parte Web, o build pode reutilizar um `web_plugin_registrant.dart` antigo em `.dart_tool/flutter_build/<hash>/` e o plugin some do site (aconteceu com o `image_picker`: "Não foi possível abrir"). Solução: apagar essa pasta de cache e compilar de novo; conferir no `main.dart.js` se o plugin entrou.
-- Depois de publicar, confira os cabeçalhos (CSP, `X-Frame-Options`) e que o `main.dart.js` de produção contém o código novo.
+- Depois de publicar, confira os cabeçalhos (CSP, `X-Frame-Options`) e que o `main.dart.js` de produção contém o código novo. Ao procurar um texto com acento no `main.dart.js`, use a forma escapada do dart2js: `Opções` aparece como `Op\xe7\xf5es`.
 
 ## Android: assinatura e backup
 - `flutter build apk --release` **falha** sem `android/key.properties` (sem fallback para a chave debug). Para testes sem a chave, use `--debug`.
 - O app não participa de backup do Android (`allowBackup="false"` + `res/xml/data_extraction_rules.xml`).
 - O APK release é assinado com `C:\Users\abpau\vozes-da-catedral-release.jks` (fora do repositório; `android/key.properties` está no `.gitignore`). **Faça backup desse keystore**: sem ele, não há como atualizar o app instalado.
 - Usuários com APK assinado com a chave debug precisam desinstalar uma vez (perdem o cache local; sincronizar antes). Depois, `adb install -r` funciona.
+- **Barra de navegação do Android:** o app é desenhado por trás da barra de navegação do sistema (edge-to-edge). Telas que rolam com `padding` fixo precisam somar `MediaQuery.paddingOf(context).bottom`, senão o fim do conteúdo fica escondido atrás dos botões (corrigido no detalhe da música e na lista do hinário em 14/11/2026). Outras telas ainda não foram revisadas.
+- Para ver o que aparece no celular: `adb shell screencap -p /sdcard/x.png`, `adb pull /sdcard/x.png` e apagar o arquivo do aparelho.
 
 ## Estado do banco Supabase (14/11/2026)
 - 26 funções `security definer` em `public`, todas com `search_path` vazio; `anon` sem `EXECUTE` nas RPCs do app.
@@ -137,7 +152,8 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 2. Aplicar/validar o `schema.sql` em um banco vazio (não testado).
 3. As migrations do repositório não correspondem 1:1 ao histórico do Supabase (parte foi aplicada pelo SQL Editor). O `schema.sql` é a referência do estado final.
 4. Distribuir o APK 0.2.x aos demais usuários Android (subir a versão antes).
-5. Cobertura de testes do app ainda baixa em sync e telas (34 testes, focados em modelos, parser e datas).
+5. Cobertura de testes do app ainda baixa em sync e telas (47 testes, focados em modelos, parser, datas e no quadro de autoria).
+6. Revisar a margem inferior das demais telas que rolam (ver "Barra de navegação do Android").
 
 ---
 
@@ -215,7 +231,7 @@ lib/
     │   └── presentation/
     │       ├── groups_screen.dart         Meus Grupos: avatar do perfil, Encontrar grupos, badge de pendentes
     │       ├── explore_groups_screen.dart Encontrar grupos e minhas solicitações (#41)
-    │       ├── group_detail_screen.dart   tabs: Hinário | celebrações
+    │       ├── group_detail_screen.dart   tabs: Celebrações | Hinário
     │       ├── group_members_screen.dart  membros com foto, convite, menu de papel/remoção (#52)
     │       └── join_requests_widgets.dart switch "Aceitar solicitações" e pendentes (#41)
     ├── profile/                           (#42)
@@ -305,7 +321,7 @@ G        A  D
 Hosana nas alturas!
 ```
 
-Seções suportadas: ESTROFE, REFRAO/REFRÃO, PONTE, PRE-REFRAO, INTRO, OUTRO, CODA, VERSO. `[VIDEO]` é opcional (só `http`/`https`). Guia completo: `docs/formato-musicas.md`.
+Seções suportadas: ESTROFE, REFRAO/REFRÃO, PONTE, PRE-REFRAO, INTRO, OUTRO, CODA, VERSO. `[VIDEO]` é opcional (só `http`/`https`). Campos opcionais de autoria e direitos: `[LETRISTA]`, `[COMPOSITOR]`, `[EDITORA]`, `[DIREITOS]`, `[LICENCA_APP]` (#27). Guia completo: `docs/formato-musicas.md`; política: `docs/direitos-autorais.md`.
 
 ---
 
@@ -469,7 +485,7 @@ Testes do banco: cole o conteúdo de `supabase/tests/*.sql` no SQL Editor (ou ex
 4. Se o build funcionar, o app deve mostrar tela de splash → login
 5. Crie uma conta de teste no app → será redirecionado para onboarding
 6. **Lembre o usuário:** antes de testar grupos/músicas, precisa criar um grupo pelo app
-7. Estão concluídas e validadas: Tasks 1–11, varredura de segurança (#22–#26), #41, #42, #52, #54 e #55. Abertas: **#27** (decisão do usuário), **#51** (bloqueada sem servidor de e-mail) e **#56** (spike de notificações). Antes de distribuir o APK a outras pessoas, subir a versão. Uma branch por issue; validar antes do merge.
+7. Estão concluídas e validadas: Tasks 1–11, varredura de segurança (#22–#26), #27, #41, #42, #52, #54 e #55. Abertas: **#51** (bloqueada sem servidor de e-mail) e **#56** (spike de notificações). Antes de distribuir o APK a outras pessoas, subir a versão. Uma branch por issue; validar antes do merge.
 
 > Para atualizar o GitHub Projects ao concluir cada task:
 > `gh issue close <NUMBER> --repo abpaula77/Vozes_da_Catedral --comment "Task concluída: <descrição>"`
