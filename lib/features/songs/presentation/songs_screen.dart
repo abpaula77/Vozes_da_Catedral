@@ -9,6 +9,7 @@ import '../data/songs_provider.dart';
 import '../domain/direitos_autorais.dart';
 import '../domain/song_model.dart';
 import '../domain/song_parser.dart';
+import 'autoria_direitos_card.dart';
 import 'video_link_button.dart';
 
 final _songMomentFilterProvider =
@@ -283,7 +284,13 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.all(16),
+                  // Keep the last song above the system navigation bar.
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    16 + MediaQuery.paddingOf(context).bottom,
+                  ),
                   itemCount: filteredMusicas.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
@@ -930,6 +937,8 @@ class _SyncStatus extends StatelessWidget {
   }
 }
 
+enum _AcaoMusica { autoria, classificar, editar, excluir }
+
 class _MusicaCard extends StatelessWidget {
   final SongModel musica;
   final bool isCoordenador;
@@ -1037,29 +1046,63 @@ class _MusicaCard extends StatelessWidget {
                   url: musica.conteudoJson.videoUrl!,
                   compact: true,
                 ),
-              if (onClassify != null)
-                IconButton(
-                  icon: const Icon(Icons.category_outlined),
-                  tooltip: 'Classificar momentos litúrgicos',
-                  onPressed: onClassify,
-                  iconSize: 20,
-                ),
-              if (onEdit != null)
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Editar música, cifras e letra',
-                  onPressed: onEdit,
-                  iconSize: 20,
-                ),
-              if (onDelete != null)
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: theme.colorScheme.error.withValues(alpha: 0.7),
-                  ),
-                  onPressed: onDelete,
-                  iconSize: 20,
-                ),
+              // One menu per song (#27): authorship for everyone; classify,
+              // edit and delete for coordinators.
+              PopupMenuButton<_AcaoMusica>(
+                tooltip: 'Opções da música',
+                onSelected: (acao) {
+                  switch (acao) {
+                    case _AcaoMusica.autoria:
+                      mostrarAutoriaDireitos(context, musica.conteudoJson);
+                    case _AcaoMusica.classificar:
+                      onClassify?.call();
+                    case _AcaoMusica.editar:
+                      onEdit?.call();
+                    case _AcaoMusica.excluir:
+                      onDelete?.call();
+                  }
+                },
+                itemBuilder:
+                    (_) => [
+                      const PopupMenuItem(
+                        value: _AcaoMusica.autoria,
+                        child: ListTile(
+                          leading: Icon(Icons.copyright_outlined),
+                          title: Text('Autoria e direitos'),
+                        ),
+                      ),
+                      if (onClassify != null)
+                        const PopupMenuItem(
+                          value: _AcaoMusica.classificar,
+                          child: ListTile(
+                            leading: Icon(Icons.category_outlined),
+                            title: Text('Classificar momentos litúrgicos'),
+                          ),
+                        ),
+                      if (onEdit != null)
+                        const PopupMenuItem(
+                          value: _AcaoMusica.editar,
+                          child: ListTile(
+                            leading: Icon(Icons.edit_outlined),
+                            title: Text('Editar música, cifras e letra'),
+                          ),
+                        ),
+                      if (onDelete != null)
+                        PopupMenuItem(
+                          value: _AcaoMusica.excluir,
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.delete_outline,
+                              color: theme.colorScheme.error,
+                            ),
+                            title: Text(
+                              'Excluir música',
+                              style: TextStyle(color: theme.colorScheme.error),
+                            ),
+                          ),
+                        ),
+                    ],
+              ),
             ],
           ),
         ),
