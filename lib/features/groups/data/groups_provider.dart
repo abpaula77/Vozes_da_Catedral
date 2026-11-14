@@ -26,8 +26,10 @@ final gruposProvider = StreamProvider<List<GrupoModel>>((ref) {
   );
 });
 
-final membrosGrupoProvider =
-    FutureProvider.family<List<MembroGrupoModel>, String>((ref, grupoId) {
+// autoDispose: reloaded every time the members screen opens, so name and
+// photo changes (own or by other members) show up without a page reload.
+final membrosGrupoProvider = FutureProvider.autoDispose
+    .family<List<MembroGrupoModel>, String>((ref, grupoId) {
       // Reload after an account switch (#52).
       ref.watch(currentUserIdProvider);
       return ref.watch(gruposServiceProvider).getMembros(grupoId);
