@@ -146,7 +146,9 @@ A foto enviada é apagada **pelo app** antes da chamada, pela API do Storage, qu
 
 ### CSP do Web
 
-Os links temporários do Storage vêm de `https://npujroyocclobjrpeaed.supabase.co/storage/...`, já coberto por `img-src https:` e `connect-src https://*.supabase.co`. A CSP não muda.
+Os links temporários do Storage vêm de `https://npujroyocclobjrpeaed.supabase.co/storage/...`, já coberto por `connect-src https://*.supabase.co`.
+
+**Correção após o teste (13/11/2026):** no Web, o Flutter (CanvasKit) baixa imagens com `fetch`, que obedece a `connect-src`, não a `img-src`. A foto do Google (`lh3.googleusercontent.com`) era bloqueada e o app mostrava a inicial. `connect-src` passou a incluir `https://*.googleusercontent.com` (o Google responde com `Access-Control-Allow-Origin: *`).
 
 ## Tratamento de erros
 
