@@ -13,13 +13,20 @@ part 'app_database.g.dart';
     SyncStatusLocal,
     CelebracoesLocal,
     ItensCelebracaoLocal,
+    AppMetaLocal,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// In-memory or custom database, for tests.
+  AppDatabase.forTesting(super.executor);
+
+  /// Metadata key holding the id of the account that owns the local cache.
+  static const chaveDonoCache = 'dono_cache';
+
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -35,6 +42,7 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await migrator.addColumn(musicasLocal, musicasLocal.momentosLiturgicos);
       }
+      if (from < 5) await migrator.createTable(appMetaLocal);
     },
   );
 
@@ -174,4 +182,53 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteItensByCelebracao(String celebracaoId) =>
       (delete(itensCelebracaoLocal)
         ..where((t) => t.celebracaoId.equals(celebracaoId))).go();
+
+  // ── Cache maintenance (#61) ────────────────────────────────────────────────
+
+  /// Removes a group and everything cached for it: celebration items,
+  /// celebrations, songs and sync status. Other groups are untouched.
+  Future<void> removerConteudoDoGrupo(String grupoId) => transaction(() async {
+    final celebracoesDoGrupo =
+        selectOnly(celebracoesLocal)
+          ..addColumns([celebracoesLocal.id])
+          ..where(celebracoesLocal.grupoId.equals(grupoId));
+    await (delete(itensCelebracaoLocal)
+      ..where((t) => t.celebracaoId.isInQuery(celebracoesDoGrupo))).go();
+    await (delete(celebracoesLocal)
+      ..where((t) => t.grupoId.equals(grupoId))).go();
+    await (delete(musicasLocal)..where((t) => t.grupoId.equals(grupoId))).go();
+    await (delete(syncStatusLocal)
+      ..where((t) => t.grupoId.equals(grupoId))).go();
+    await deleteGrupo(grupoId);
+  });
+
+  /// Deletes every cached row, including metadata.
+  Future<void> limparTudo() => transaction(() async {
+    for (final table in allTables) {
+      await delete(table).go();
+    }
+  });
+
+  Future<String?> lerMeta(String chave) async {
+    final row =
+        await (select(appMetaLocal)
+          ..where((t) => t.chave.equals(chave))).getSingleOrNull();
+    return row?.valor;
+  }
+
+  Future<void> gravarMeta(String chave, String valor) =>
+      into(appMetaLocal).insertOnConflictUpdate(
+        AppMetaLocalCompanion.insert(chave: chave, valor: valor),
+      );
+
+  /// Makes sure the local cache belongs to [userId]. When another account
+  /// owned it, everything is cleared first. When no owner is recorded yet
+  /// (first run after the update), the current content is kept and assigned
+  /// to [userId].
+  Future<void> garantirDonoDoCache(String userId) => transaction(() async {
+    final dono = await lerMeta(chaveDonoCache);
+    if (dono == userId) return;
+    if (dono != null) await limparTudo();
+    await gravarMeta(chaveDonoCache, userId);
+  });
 }

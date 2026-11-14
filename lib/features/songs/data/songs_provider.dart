@@ -18,9 +18,11 @@ final selectedGrupoIdProvider = StateProvider<String?>((ref) => null);
 final musicasByGrupoProvider = StreamProvider.family<List<SongModel>, String>((
   ref,
   grupoId,
-) {
+) async* {
+  final pronto = ref.watch(cacheLocalProntoProvider.future);
   final db = ref.watch(databaseProvider);
-  return db
+  await pronto;
+  yield* db
       .watchMusicasByGrupo(grupoId)
       .map(
         (rows) =>
@@ -50,8 +52,11 @@ final musicasByGrupoProvider = StreamProvider.family<List<SongModel>, String>((
 final musicasSyncAtProvider = StreamProvider.family<DateTime?, String>((
   ref,
   grupoId,
-) {
-  return ref.watch(databaseProvider).watchMusicasSyncAt(grupoId);
+) async* {
+  final pronto = ref.watch(cacheLocalProntoProvider.future);
+  final db = ref.watch(databaseProvider);
+  await pronto;
+  yield* db.watchMusicasSyncAt(grupoId);
 });
 
 class SongEditResult {

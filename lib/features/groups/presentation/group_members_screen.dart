@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
+import '../../../core/router/app_router.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/groups_provider.dart';
 import '../domain/group_model.dart';
 import '../../profile/presentation/user_avatar.dart';
+import 'delete_group_dialogs.dart';
 import 'join_requests_widgets.dart';
 
 class GroupMembersScreen extends ConsumerWidget {
@@ -61,6 +64,12 @@ class GroupMembersScreen extends ConsumerWidget {
                   SolicitacoesPendentesSection(grupoId: grupoId),
                 ],
               ];
+              final footer = <Widget>[
+                if (grupo.isCoordenador)
+                  ZonaDePerigo(
+                    onExcluir: () => _excluirGrupo(context, ref, grupo),
+                  ),
+              ];
               if (items.isEmpty) {
                 return ListView(
                   padding: const EdgeInsets.all(16),
@@ -70,15 +79,19 @@ class GroupMembersScreen extends ConsumerWidget {
                       padding: EdgeInsets.all(24),
                       child: Center(child: Text('Este grupo não tem membros.')),
                     ),
+                    ...footer,
                   ],
                 );
               }
               return ListView.separated(
                 padding: const EdgeInsets.all(16),
-                itemCount: header.length + items.length,
+                itemCount: header.length + items.length + footer.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   if (index < header.length) return header[index];
+                  if (index >= header.length + items.length) {
+                    return footer[index - header.length - items.length];
+                  }
                   final member = items[index - header.length];
                   return Card(
                     child: ListTile(
@@ -111,6 +124,81 @@ class GroupMembersScreen extends ConsumerWidget {
         );
       },
     );
+  }
+
+  /// Delete the group (#61): summary with optional copy, typed confirmation,
+  /// then back to "Meus Grupos".
+  Future<void> _excluirGrupo(
+    BuildContext context,
+    WidgetRef ref,
+    GrupoModel grupo,
+  ) async {
+    final service = ref.read(gruposServiceProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
+
+    final continuar = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (dialogContext) => ResumoExclusaoDialog(
+            nomeGrupo: grupo.nome,
+            carregar: () => service.resumoExclusao(grupo.id),
+            copiar: () async {
+              final destinos =
+                  (ref.read(gruposProvider).valueOrNull ?? const [])
+                      .where((g) => g.id != grupo.id && g.isCoordenador)
+                      .toList();
+              final destino = await showDialog<GrupoModel>(
+                context: dialogContext,
+                builder: (_) => DestinoCopiaDialog(destinos: destinos),
+              );
+              if (destino == null) return null;
+              final copia = await service.copiarConteudoExclusivo(
+                origemId: grupo.id,
+                destinoId: destino.id,
+              );
+              final musicas =
+                  copia.musicas == 1 ? '1 música' : '${copia.musicas} músicas';
+              final celebracoes =
+                  copia.celebracoes == 1
+                      ? '1 celebração'
+                      : '${copia.celebracoes} celebrações';
+              return '$musicas e $celebracoes copiadas para ${destino.nome}.';
+            },
+          ),
+    );
+    if (continuar != true || !context.mounted) return;
+
+    final confirmacao = await showDialog<String>(
+      context: context,
+      builder: (_) => ConfirmarExclusaoDialog(nomeGrupo: grupo.nome),
+    );
+    if (confirmacao == null || !context.mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      await service.excluirGrupo(grupoId: grupo.id, confirmacao: confirmacao);
+      navigator.pop();
+      router.go(AppRoutes.groups);
+      messenger.showSnackBar(
+        SnackBar(content: Text('Grupo ${grupo.nome} excluído.')),
+      );
+    } catch (error) {
+      navigator.pop();
+      final mensagem = mensagemErroExclusao(error);
+      messenger.showSnackBar(SnackBar(content: Text(mensagem)));
+      // Another coordinator already deleted it: drop it locally and leave.
+      if (mensagem == 'Grupo não encontrado.') {
+        router.go(AppRoutes.groups);
+        await service.syncGrupos().catchError((_) => const <String>[]);
+      }
+    }
   }
 
   Future<void> _addMember(BuildContext context, WidgetRef ref) async {
