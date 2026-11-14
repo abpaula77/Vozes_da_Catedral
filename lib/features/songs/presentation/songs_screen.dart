@@ -8,6 +8,7 @@ import '../../../core/utils/date_format_br.dart';
 import '../data/songs_provider.dart';
 import '../domain/song_model.dart';
 import '../domain/song_parser.dart';
+import 'video_link_button.dart';
 
 final _songMomentFilterProvider =
     StateProvider.family<MomentoLiturgico?, String>((ref, grupoId) => null);
@@ -610,8 +611,8 @@ class _SongEditorDialogState extends State<_SongEditorDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Edite título, tom, BPM, categorias, momentos, cifras e letra '
-                'no formato .txt.',
+                'Edite título, tom, BPM, categorias, momentos, link de vídeo '
+                '([VIDEO]), cifras e letra no formato .txt.',
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),
@@ -962,6 +963,11 @@ class _MusicaCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (musica.conteudoJson.videoUrl != null)
+                VideoLinkButton(
+                  url: musica.conteudoJson.videoUrl!,
+                  compact: true,
+                ),
               if (onClassify != null)
                 IconButton(
                   icon: const Icon(Icons.category_outlined),

@@ -106,4 +106,44 @@ Mais uma linha
       ),
     );
   });
+
+  group('video link', () {
+    const body = '[ESTROFE]\nD\nLinha\n';
+
+    test('parses [VIDEO] and keeps it through a JSON round trip', () {
+      final song = SongParser.parse(
+        '[TITULO]: A\n[VIDEO]: https://youtu.be/abc123\n$body',
+      );
+      expect(song.videoUrl, 'https://youtu.be/abc123');
+      final decoded = SongContent.fromJson(
+        jsonDecode(jsonEncode(song.toJson())) as Map<String, dynamic>,
+      );
+      expect(decoded.videoUrl, 'https://youtu.be/abc123');
+    });
+
+    test('songs without [VIDEO] and legacy JSON have no video', () {
+      expect(SongParser.parse('[TITULO]: A\n$body').videoUrl, isNull);
+      final legacy = SongContent.fromJson({
+        'titulo': 'A',
+        'categorias': [],
+        'secoes': [],
+      });
+      expect(legacy.videoUrl, isNull);
+    });
+
+    test('rejects links that are not absolute http(s) URLs', () {
+      for (final bad in [
+        'javascript:alert(1)',
+        'youtube.com/watch?v=1',
+        'ftp://x.com/a',
+        'not a url',
+      ]) {
+        expect(
+          () => SongParser.parse('[TITULO]: A\n[VIDEO]: $bad\n$body'),
+          throwsA(isA<SongParseException>()),
+          reason: bad,
+        );
+      }
+    });
+  });
 }
