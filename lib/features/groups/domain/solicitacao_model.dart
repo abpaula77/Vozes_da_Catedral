@@ -4,6 +4,8 @@
 /// `.kiro/specs/pedido-filiacao-grupos/design.md`; nothing is cached locally.
 library;
 
+import '../../../core/utils/date_format_br.dart' as date_br;
+
 /// Status of a join request.
 enum StatusSolicitacao {
   pendente('pendente'),
@@ -25,11 +27,7 @@ enum StatusSolicitacao {
 }
 
 /// Formats a date as DD/MM/AAAA in the device's local time zone.
-String formatarData(DateTime data) {
-  final local = data.toLocal();
-  String doisDigitos(int n) => n.toString().padLeft(2, '0');
-  return '${doisDigitos(local.day)}/${doisDigitos(local.month)}/${local.year}';
-}
+String formatarData(DateTime data) => date_br.formatarData(data);
 
 DateTime? _parseDate(Object? value) =>
     value == null ? null : DateTime.parse(value as String);
