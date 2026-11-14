@@ -1,3 +1,4 @@
+import 'direitos_autorais.dart';
 import 'song_model.dart';
 import '../../../core/domain/momento_liturgico.dart';
 
@@ -10,6 +11,11 @@ import '../../../core/domain/momento_liturgico.dart';
 /// [CATEGORIA]: santo
 /// [BPM]: 80
 /// [VIDEO]: https://www.youtube.com/watch?v=...
+/// [LETRISTA]: Nome
+/// [COMPOSITOR]: Nome
+/// [EDITORA]: Nome
+/// [DIREITOS]: protegida até 2086
+/// [LICENCA_APP]: pendente
 ///
 /// [ESTROFE]
 /// D        F#m
@@ -53,6 +59,11 @@ class SongParser {
     String? tom;
     int? bpm;
     String? videoUrl;
+    String? letrista;
+    String? compositor;
+    String? editora;
+    DireitosLidos? direitos;
+    StatusLicencaApp? licencaApp;
     final categorias = <String>[];
     final momentosLiturgicos = <MomentoLiturgico>[];
     final secoes = <SongSection>[];
@@ -86,7 +97,8 @@ class SongParser {
           rawLine.trimRight(); // preserve leading spaces for chord alignment
 
       // ── Header tags: [TITULO], [TOM], [CATEGORIA], [BPM] ──────────────────
-      final headerMatch = RegExp(r'^\[(\w+)\]:\s*(.+)$').firstMatch(line);
+      // Keys may contain accented letters ([TÍTULO], [LICENÇA_APP]).
+      final headerMatch = _headerRegex.firstMatch(line);
       if (headerMatch != null) {
         final key = headerMatch.group(1)!.toUpperCase();
         final value = headerMatch.group(2)!.trim();
@@ -107,6 +119,35 @@ class SongParser {
               throw SongParseException(
                 'Link de vídeo inválido: "$value". Use um endereço '
                 'http:// ou https://.',
+              );
+            }
+            break;
+          // ── Authorship and rights (issue #27) ─────────────────────────────
+          case 'LETRISTA':
+            letrista = _textoCurto('LETRISTA', value);
+            break;
+          case 'COMPOSITOR':
+            compositor = _textoCurto('COMPOSITOR', value);
+            break;
+          case 'EDITORA':
+            editora = _textoCurto('EDITORA', value);
+            break;
+          case 'DIREITOS':
+            direitos = lerDireitos(value);
+            if (direitos == null) {
+              throw SongParseException(
+                'Valor inválido em [DIREITOS]: "$value". Use dominio-publico, '
+                'protegida (opcional: "protegida até 2086") ou nao-verificado.',
+              );
+            }
+            break;
+          case 'LICENCA_APP':
+          case 'LICENÇA_APP':
+            licencaApp = lerLicencaApp(value);
+            if (licencaApp == null) {
+              throw SongParseException(
+                'Valor inválido em [LICENCA_APP]: "$value". Use pendente, '
+                'autorizada, nao-necessaria ou negada.',
               );
             }
             break;
@@ -189,8 +230,29 @@ class SongParser {
       categorias: categorias,
       momentosLiturgicos: momentosLiturgicos,
       videoUrl: videoUrl,
+      letrista: letrista,
+      compositor: compositor,
+      editora: editora,
+      statusDireitos: direitos?.status,
+      direitosAte: direitos?.ate,
+      statusLicencaApp: licencaApp,
       secoes: secoes,
     );
+  }
+
+  /// Header line `[CHAVE]: valor`. Same as the former `\w+` key (ASCII
+  /// letters, digits, underscore) plus accented letters.
+  static final _headerRegex = RegExp(r'^\[([A-Za-z0-9_À-ÿ]+)\]:\s*(.+)$');
+
+  static const _limiteTexto = 200;
+
+  static String _textoCurto(String campo, String valor) {
+    if (valor.length > _limiteTexto) {
+      throw SongParseException(
+        'O campo [$campo] deve ter no máximo $_limiteTexto caracteres.',
+      );
+    }
+    return valor;
   }
 
   /// Returns [value] as an absolute http(s) URL with a host, or null.

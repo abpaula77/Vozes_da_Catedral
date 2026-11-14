@@ -6,12 +6,31 @@ import '../../../core/domain/momento_liturgico.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/utils/date_format_br.dart';
 import '../data/songs_provider.dart';
+import '../domain/direitos_autorais.dart';
 import '../domain/song_model.dart';
 import '../domain/song_parser.dart';
 import 'video_link_button.dart';
 
 final _songMomentFilterProvider =
     StateProvider.family<MomentoLiturgico?, String>((ref, grupoId) => null);
+
+/// License filter of the hymnal (issue #27). Null shows every song.
+enum _FiltroLicenca {
+  naoInformada('Licença não informada', null),
+  pendente('Pendente', StatusLicencaApp.pendente),
+  autorizada('Autorizada', StatusLicencaApp.autorizada),
+  naoNecessaria('Não necessária', StatusLicencaApp.naoNecessaria),
+  negada('Negada', StatusLicencaApp.negada);
+
+  final String rotulo;
+  final StatusLicencaApp? status;
+  const _FiltroLicenca(this.rotulo, this.status);
+
+  bool aceita(SongModel song) => song.conteudoJson.statusLicencaApp == status;
+}
+
+final _songLicenseFilterProvider =
+    StateProvider.family<_FiltroLicenca?, String>((ref, grupoId) => null);
 
 class SongsScreen extends ConsumerStatefulWidget {
   final String grupoId;
@@ -46,6 +65,7 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
     final musicasAsync = ref.watch(musicasByGrupoProvider(grupoId));
     final syncAtAsync = ref.watch(musicasSyncAtProvider(grupoId));
     final selectedMoment = ref.watch(_songMomentFilterProvider(grupoId));
+    final selectedLicense = ref.watch(_songLicenseFilterProvider(grupoId));
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -136,6 +156,45 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
               ],
             ),
           ),
+          SizedBox(
+            height: 48,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+              children: [
+                FilterChip(
+                  avatar: const Icon(Icons.copyright_outlined, size: 18),
+                  label: const Text('Todas as licenças'),
+                  selected: selectedLicense == null,
+                  onSelected:
+                      (_) =>
+                          ref
+                              .read(
+                                _songLicenseFilterProvider(grupoId).notifier,
+                              )
+                              .state = null,
+                ),
+                const SizedBox(width: 8),
+                for (final filtro in _FiltroLicenca.values)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(filtro.rotulo),
+                      selected: selectedLicense == filtro,
+                      onSelected:
+                          (_) =>
+                              ref
+                                  .read(
+                                    _songLicenseFilterProvider(
+                                      grupoId,
+                                    ).notifier,
+                                  )
+                                  .state = filtro,
+                    ),
+                  ),
+              ],
+            ),
+          ),
           Expanded(
             child: musicasAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -150,7 +209,10 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                       final matchesQuery = song.titulo.toLowerCase().contains(
                         query,
                       );
-                      return matchesMoment && matchesQuery;
+                      final matchesLicense =
+                          selectedLicense == null ||
+                          selectedLicense.aceita(song);
+                      return matchesMoment && matchesQuery && matchesLicense;
                     }).toList();
                 if (musicas.isEmpty) {
                   return Center(
@@ -190,10 +252,12 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          _searchQuery.isNotEmpty
-                              ? 'Nenhuma música encontrada com esses filtros.'
-                              : 'Nenhuma música classificada para '
-                                  '${selectedMoment!.label}.',
+                          _searchQuery.isEmpty &&
+                                  selectedLicense == null &&
+                                  selectedMoment != null
+                              ? 'Nenhuma música classificada para '
+                                  '${selectedMoment.label}.'
+                              : 'Nenhuma música encontrada com esses filtros.',
                           textAlign: TextAlign.center,
                         ),
                         TextButton(
@@ -203,6 +267,11 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                             ref
                                 .read(
                                   _songMomentFilterProvider(grupoId).notifier,
+                                )
+                                .state = null;
+                            ref
+                                .read(
+                                  _songLicenseFilterProvider(grupoId).notifier,
                                 )
                                 .state = null;
                           },

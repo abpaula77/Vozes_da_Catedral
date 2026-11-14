@@ -16,6 +16,11 @@ músicas do grupo para sincronizá-la.
 [MOMENTO]: entrada, comunhao
 [BPM]: 92
 [VIDEO]: https://www.youtube.com/watch?v=XXXXXXXXXXX
+[LETRISTA]: Nome de quem escreveu a letra
+[COMPOSITOR]: Nome de quem compôs a música
+[EDITORA]: Editora ou gravadora
+[DIREITOS]: protegida até 2086
+[LICENCA_APP]: pendente
 
 [ESTROFE 1]
 D                 A
@@ -50,6 +55,11 @@ Os campos devem ficar no início do arquivo, antes da primeira seção:
 | `[MOMENTOS]` | Não | Forma alternativa de `[MOMENTO]`. |
 | `[BPM]` | Não | Andamento em número inteiro, por exemplo `92`. |
 | `[VIDEO]` | Não | Link de um vídeo da música (YouTube, Vimeo ou outra plataforma). Deve ser um endereço completo `http://` ou `https://`. |
+| `[LETRISTA]` | Não | Autor da letra. Texto livre, até 200 caracteres. |
+| `[COMPOSITOR]` | Não | Autor da música (melodia). Texto livre, até 200 caracteres. |
+| `[EDITORA]` | Não | Editora, gravadora ou detentora dos direitos. Texto livre, até 200 caracteres. |
+| `[DIREITOS]` | Não | Situação dos direitos autorais: `dominio-publico`, `protegida` ou `nao-verificado`. Para obras protegidas, o último ano de proteção é opcional: `protegida até 2086`. |
+| `[LICENCA_APP]` | Não | Autorização para usar a música no app: `pendente`, `autorizada`, `nao-necessaria` (domínio público) ou `negada`. |
 
 O link de `[VIDEO]` aparece como botão "Assistir vídeo" no hinário (lista e detalhe da música) e na montagem da celebração. Ele não aparece no modo performance. Um link inválido faz a importação ou a edição falhar com uma mensagem de erro. Arquivos sem `[VIDEO]` continuam válidos.
 
@@ -59,7 +69,17 @@ Uma música pode ser classificada para mais de um momento. Os identificadores v�
 
 No montador, músicas sem classificação continuam disponíveis para qualquer momento. Ao selecionar a mesma música em mais de um momento, o app avisa, mas permite continuar.
 
-O parser atualmente só usa esses campos. Informações como autor, compositor ou fonte não são armazenadas pelo cabeçalho.
+### Autoria e direitos
+
+Os campos `[LETRISTA]`, `[COMPOSITOR]`, `[EDITORA]`, `[DIREITOS]` e `[LICENCA_APP]` identificam os autores e a situação de direitos da música. São informativos: o app não bloqueia nenhuma música por causa deles. A política de uso está em [direitos-autorais.md](direitos-autorais.md).
+
+- Os valores de `[DIREITOS]` e `[LICENCA_APP]` aceitam maiúsculas, acentos, espaços ou hífens: `Domínio Público`, `dominio_publico` e `dominio-publico` são o mesmo valor. `[DIREITOS]` também aceita `Protegida (até 2086)`. Um valor fora da lista faz a importação ou a edição falhar com uma mensagem de erro.
+- Os nomes dos campos aceitam acento (`[LICENÇA_APP]`).
+- Músicas sem esses campos continuam válidas e aparecem como "não informados".
+- As informações aparecem só no **hinário**: no detalhe da música (quadro "Autoria e direitos") e no filtro por situação de licença. Não aparecem nas celebrações nem no modo performance.
+- Para preencher, edite a música no app e acrescente as linhas no cabeçalho.
+
+O parser não usa outros campos de cabeçalho; linhas `[CAMPO]: valor` desconhecidas são ignoradas.
 
 ## Seções aceitas
 

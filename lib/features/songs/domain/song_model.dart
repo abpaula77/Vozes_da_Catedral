@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../../core/domain/momento_liturgico.dart';
+import 'direitos_autorais.dart';
 
 /// Domain model for a song (música) with parsed chord+lyric structure.
 class SongModel {
@@ -69,6 +70,17 @@ class SongContent {
   final List<String> categorias;
   final List<MomentoLiturgico> momentosLiturgicos;
   final String? videoUrl;
+
+  /// Authorship and rights (issue #27). Informational; shown only in the
+  /// hymnal, never in celebrations or performance mode.
+  final String? letrista;
+  final String? compositor;
+  final String? editora;
+  final StatusDireitos? statusDireitos;
+
+  /// Last year of protection, when [statusDireitos] is `protegida`.
+  final int? direitosAte;
+  final StatusLicencaApp? statusLicencaApp;
   final List<SongSection> secoes;
 
   const SongContent({
@@ -78,8 +90,22 @@ class SongContent {
     required this.categorias,
     this.momentosLiturgicos = const [],
     this.videoUrl,
+    this.letrista,
+    this.compositor,
+    this.editora,
+    this.statusDireitos,
+    this.direitosAte,
+    this.statusLicencaApp,
     required this.secoes,
   });
+
+  /// Whether any authorship or rights field is filled in.
+  bool get temAutoriaOuDireitos =>
+      letrista != null ||
+      compositor != null ||
+      editora != null ||
+      statusDireitos != null ||
+      statusLicencaApp != null;
 
   Map<String, dynamic> toJson() => {
     'titulo': titulo,
@@ -89,6 +115,12 @@ class SongContent {
     'momentosLiturgicos':
         momentosLiturgicos.map((moment) => moment.name).toList(),
     'videoUrl': videoUrl,
+    'letrista': letrista,
+    'compositor': compositor,
+    'editora': editora,
+    'direitos': statusDireitos?.valor,
+    'direitosAte': direitosAte,
+    'licencaApp': statusLicencaApp?.valor,
     'secoes': secoes.map((s) => s.toJson()).toList(),
   };
 
@@ -99,6 +131,13 @@ class SongContent {
     categorias: List<String>.from(json['categorias'] as List? ?? []),
     momentosLiturgicos: _momentosFromJson(json['momentosLiturgicos']),
     videoUrl: json['videoUrl'] as String?,
+    letrista: json['letrista'] as String?,
+    compositor: json['compositor'] as String?,
+    editora: json['editora'] as String?,
+    // Unknown values (e.g. from a newer app version) are treated as absent.
+    statusDireitos: StatusDireitos.fromValor(json['direitos']),
+    direitosAte: (json['direitosAte'] as num?)?.toInt(),
+    statusLicencaApp: StatusLicencaApp.fromValor(json['licencaApp']),
     secoes:
         (json['secoes'] as List)
             .map((s) => SongSection.fromJson(s as Map<String, dynamic>))
