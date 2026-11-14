@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database_provider.dart';
 import '../domain/song_model.dart';
+import 'autoria_direitos_card.dart';
 import 'cifra_view.dart';
 
 /// Font size preferences persisted in memory during the session.
@@ -95,12 +96,19 @@ class SongDetailScreen extends ConsumerWidget {
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-            child: CifraView(
-              song: content,
-              lyricFontSize: lyricSize,
-              chordFontSize: chordSize,
-              showChords: showChords,
-              showVideoLink: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                CifraView(
+                  song: content,
+                  lyricFontSize: lyricSize,
+                  chordFontSize: chordSize,
+                  showChords: showChords,
+                  showVideoLink: true,
+                ),
+                // Hymnal only (issue #27): not in celebrations/performance.
+                AutoriaDireitosCard(song: content),
+              ],
             ),
           ),
         );
