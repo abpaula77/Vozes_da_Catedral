@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../domain/song_model.dart';
+import 'video_link_button.dart';
 
 /// Renders a full song with chord lines above lyric lines using a
 /// monospaced font so chords stay aligned with the correct syllables.
@@ -15,12 +16,17 @@ class CifraView extends StatelessWidget {
   final double chordFontSize;
   final bool showChords;
 
+  /// Shows the song's video link. Off by default so performance mode stays
+  /// free of external links.
+  final bool showVideoLink;
+
   const CifraView({
     super.key,
     required this.song,
     this.lyricFontSize = 16,
     this.chordFontSize = 13,
     this.showChords = true,
+    this.showVideoLink = false,
   });
 
   @override
@@ -32,6 +38,11 @@ class CifraView extends StatelessWidget {
       children: [
         // Song header
         _SongHeader(song: song, theme: theme),
+        if (showVideoLink && song.videoUrl != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: VideoLinkButton(url: song.videoUrl!),
+          ),
         const SizedBox(height: 24),
         // Sections
         ...song.secoes.map(

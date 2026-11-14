@@ -33,6 +33,7 @@ dependencies:
   # Profile photo (gallery/camera, resized on pick). Pinned: last version
   # compatible with Dart 3.7.
   image_picker: 1.2.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
