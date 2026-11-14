@@ -95,7 +95,15 @@ class SongDetailScreen extends ConsumerWidget {
             ],
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            // Android draws the app behind the system navigation bar
+            // (edge-to-edge); without its height the end of the song was
+            // hidden behind the bar.
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              20 + MediaQuery.paddingOf(context).bottom,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
