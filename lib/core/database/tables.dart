@@ -70,6 +70,15 @@ class CelebracoesLocal extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Key-value metadata about the local cache (e.g. which account owns it, #61).
+class AppMetaLocal extends Table {
+  TextColumn get chave => text()();
+  TextColumn get valor => text()();
+
+  @override
+  Set<Column> get primaryKey => {chave};
+}
+
 /// Local SQLite table for celebration items (ordered songs per celebration)
 class ItensCelebracaoLocal extends Table {
   TextColumn get id => text()();

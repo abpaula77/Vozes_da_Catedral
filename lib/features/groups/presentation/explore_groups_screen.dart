@@ -41,6 +41,7 @@ class _ExploreGroupsScreenState extends ConsumerState<ExploreGroupsScreen> {
     _sincronizouAprovados = true;
     ref.read(gruposServiceProvider).syncGrupos().catchError((_) {
       // "Meus Grupos" syncs again when opened; nothing to show here.
+      return const <String>[];
     });
   }
 

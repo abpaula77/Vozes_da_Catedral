@@ -7,9 +7,11 @@ import '../../auth/presentation/auth_provider.dart';
 import '../domain/group_model.dart';
 
 /// Stream of groups the current user belongs to (from local DB)
-final gruposProvider = StreamProvider<List<GrupoModel>>((ref) {
+final gruposProvider = StreamProvider<List<GrupoModel>>((ref) async* {
+  final pronto = ref.watch(cacheLocalProntoProvider.future);
   final db = ref.watch(databaseProvider);
-  return db.watchGrupos().map(
+  await pronto;
+  yield* db.watchGrupos().map(
     (rows) =>
         rows
             .map(
@@ -76,10 +78,16 @@ class GruposService {
     return grupoId;
   }
 
-  /// Sync groups from Supabase to local DB for the current user
-  Future<void> syncGrupos() async {
+  /// Sync groups from Supabase to local DB for the current user.
+  ///
+  /// Returns the names of groups that were on the device but the user no
+  /// longer belongs to (removed from the group, or the group was deleted).
+  /// Their cached content is removed (#61).
+  Future<List<String>> syncGrupos() async {
     final userId = _userId;
-    if (userId == null) return;
+    if (userId == null) return const [];
+    // Never write into a cache that still belongs to another account.
+    await _ref.read(cacheLocalProntoProvider.future);
 
     final rows =
         await _supabase
@@ -106,12 +114,56 @@ class GruposService {
       );
     }
 
+    final removidos = <String>[];
     final localGroups = await _db.getGrupos();
     for (final grupo in localGroups) {
       if (!syncedGroupIds.contains(grupo.id)) {
-        await _db.deleteGrupo(grupo.id);
+        await _db.removerConteudoDoGrupo(grupo.id);
+        removidos.add(grupo.nome);
       }
     }
+    return removidos;
+  }
+
+  /// Counts shown before deleting a group (Coordenador only).
+  Future<ResumoExclusao> resumoExclusao(String grupoId) async {
+    final rows =
+        await _supabase.rpc(
+              'resumo_exclusao_grupo',
+              params: {'p_grupo_id': grupoId},
+            )
+            as List<dynamic>;
+    if (rows.isEmpty) throw StateError('Grupo não encontrado.');
+    return ResumoExclusao.fromJson(rows.first as Map<String, dynamic>);
+  }
+
+  /// Copies the group's exclusive songs and all its celebrations to
+  /// [destinoId]. The user must coordinate both groups.
+  Future<CopiaConteudo> copiarConteudoExclusivo({
+    required String origemId,
+    required String destinoId,
+  }) async {
+    final rows =
+        await _supabase.rpc(
+              'copiar_conteudo_exclusivo',
+              params: {'p_origem': origemId, 'p_destino': destinoId},
+            )
+            as List<dynamic>;
+    if (rows.isEmpty) return const CopiaConteudo(musicas: 0, celebracoes: 0);
+    return CopiaConteudo.fromJson(rows.first as Map<String, dynamic>);
+  }
+
+  /// Deletes the group for everyone (Coordenador only). [confirmacao] is the
+  /// group name typed by the user; the database checks it again.
+  Future<void> excluirGrupo({
+    required String grupoId,
+    required String confirmacao,
+  }) async {
+    await _supabase.rpc(
+      'excluir_grupo',
+      params: {'p_grupo_id': grupoId, 'p_confirmacao': confirmacao},
+    );
+    await _db.removerConteudoDoGrupo(grupoId);
   }
 
   /// Fetch group members and their profiles.

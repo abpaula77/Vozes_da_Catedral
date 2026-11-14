@@ -9,21 +9,33 @@ import '../../songs/domain/song_id.dart';
 import '../domain/celebration_model.dart';
 
 final celebracaoLocalProvider =
-    FutureProvider.family<CelebracoesLocalData?, String>((ref, id) {
-      return ref.watch(databaseProvider).getCelebracao(id);
+    FutureProvider.family<CelebracoesLocalData?, String>((ref, id) async {
+      final pronto = ref.watch(cacheLocalProntoProvider.future);
+      final db = ref.watch(databaseProvider);
+      await pronto;
+      return db.getCelebracao(id);
     });
 
 final celebracoesByGrupoProvider =
-    StreamProvider.family<List<CelebracoesLocalData>, String>((ref, grupoId) {
-      return ref.watch(databaseProvider).watchCelebracoesByGrupo(grupoId);
+    StreamProvider.family<List<CelebracoesLocalData>, String>((
+      ref,
+      grupoId,
+    ) async* {
+      final pronto = ref.watch(cacheLocalProntoProvider.future);
+      final db = ref.watch(databaseProvider);
+      await pronto;
+      yield* db.watchCelebracoesByGrupo(grupoId);
     });
 
 final itensByCelebracaoProvider =
     StreamProvider.family<List<ItensCelebracaoLocalData>, String>((
       ref,
       celebracaoId,
-    ) {
-      return ref.watch(databaseProvider).watchItensByCelebracao(celebracaoId);
+    ) async* {
+      final pronto = ref.watch(cacheLocalProntoProvider.future);
+      final db = ref.watch(databaseProvider);
+      await pronto;
+      yield* db.watchItensByCelebracao(celebracaoId);
     });
 
 class CelebracoesService {

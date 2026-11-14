@@ -30,13 +30,18 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
     if (_isSyncing) return;
     setState(() => _isSyncing = true);
     try {
-      await ref.read(gruposServiceProvider).syncGrupos();
+      final removidos = await ref.read(gruposServiceProvider).syncGrupos();
       // Refresh the pending-request badges together with the groups.
       if (mounted) ref.invalidate(contagemSolicitacoesProvider);
-      if (mounted && showSuccess) {
+      // Groups deleted or that the user was removed from (#61).
+      final avisos = [
+        for (final nome in removidos) 'Você não participa mais do grupo $nome.',
+        if (showSuccess) 'Grupos sincronizados.',
+      ];
+      if (mounted && avisos.isNotEmpty) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Grupos sincronizados.')));
+        ).showSnackBar(SnackBar(content: Text(avisos.join('\n'))));
       }
     } catch (error) {
       if (mounted) {

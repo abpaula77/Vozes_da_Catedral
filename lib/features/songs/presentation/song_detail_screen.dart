@@ -25,8 +25,10 @@ class SongDetailScreen extends ConsumerWidget {
     final chordSize = ref.watch(_chordFontSizeProvider);
     final showChords = ref.watch(_showChordsProvider);
 
+    final pronto = ref.watch(cacheLocalProntoProvider.future);
+
     return FutureBuilder(
-      future: db.getMusica(musicaId),
+      future: pronto.then((_) => db.getMusica(musicaId)),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
