@@ -68,9 +68,11 @@ class _GroupDetailViewState extends ConsumerState<_GroupDetailView>
         title: Text(grupo.nome),
         bottom: TabBar(
           controller: _tabController,
+          // Celebrations first: most members open the group to see what they
+          // will sing. The tab and view orders must match.
           tabs: const [
-            Tab(icon: Icon(Icons.music_note), text: 'Hinário'),
             Tab(icon: Icon(Icons.event), text: 'Celebrações'),
+            Tab(icon: Icon(Icons.music_note), text: 'Hinário'),
           ],
         ),
         actions: [
@@ -84,11 +86,11 @@ class _GroupDetailViewState extends ConsumerState<_GroupDetailView>
       body: TabBarView(
         controller: _tabController,
         children: [
-          SongsScreen(grupoId: grupo.id, isCoordenador: grupo.isCoordenador),
           CelebrationsScreen(
             grupoId: grupo.id,
             isCoordenador: grupo.isCoordenador,
           ),
+          SongsScreen(grupoId: grupo.id, isCoordenador: grupo.isCoordenador),
         ],
       ),
     );
