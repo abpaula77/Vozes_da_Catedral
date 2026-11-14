@@ -1,7 +1,7 @@
 # Handoff — Vozes da Catedral
 
 > Documento de continuidade para outra sessão de IA ou desenvolvedor.
-> Última atualização: 13/11/2026
+> Última atualização: 14/11/2026
 
 ---
 
@@ -13,10 +13,12 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 **Stack:** Flutter 3.x · Riverpod · go_router · Drift (SQLite) · Supabase (free tier)
 **Repositório:** https://github.com/abpaula77/Vozes_da_Catedral
 **GitHub Project (Kanban):** https://github.com/users/abpaula77/projects/3
-**Último commit de código na `master`:** `b2c3bc3` — merge do PR #45 (pedido de filiação, #41)
-**Produção (13/11/2026):** Web publicado na Vercel a partir de `b2c3bc3`; APK release 0.1.1 (code 2) do mesmo commit instalado no Samsung de teste. Para distribuir a outros usuários, considere subir `version` no `pubspec.yaml` (ainda `0.1.1+2`).
+**Último commit de código na `master`:** `711d1da` — merge do PR #59 (data e hora no padrão brasileiro, #55)
+**Produção (14/11/2026):** Web publicado na Vercel a partir de `711d1da`; APK release **0.2.0 (code 3)** do mesmo commit instalado no Samsung de teste. Antes de distribuir a outros usuários, suba `version` no `pubspec.yaml` (ainda `0.2.0+3`, mas com #52, #54 e #55 a mais).
 
-**Fluxo de trabalho a partir de 12/11/2026:** uma issue por melhoria e uma branch por issue (`fix/<n>-<nome>`), com PR próprio. Não commitar direto na `master`.
+**Fluxo de trabalho:** uma issue por melhoria e uma branch por issue (`fix/<n>-<nome>` ou `feat/<n>-<nome>`), com PR próprio. Não commitar direto na `master`. Features maiores usam spec em `.kiro/specs/<nome>/` (requisitos → design → tarefas), revisado pelo usuário antes de implementar.
+
+**Sessões em paralelo:** o usuário pode rodar outras sessões em **worktrees separados** (ex.: `D:/Vozes_da_Catedral_54`). Nunca edite os arquivos de outra sessão; se a pasta principal tiver alterações que não são suas, pergunte antes de agir. Valide sempre **antes** do merge, nunca no mesmo comando (em 14/11/2026 um merge entrou com validação falhando por causa de rascunhos de outra sessão na pasta principal; a `master` estava íntegra, conferida numa cópia limpa).
 
 ---
 
@@ -36,76 +38,106 @@ Projeto piloto: Coral da Catedral de Santo Antônio — Piracicaba/SP.
 | 10 | Classificação de músicas por momento litúrgico e reutilização | ✅ Concluída, publicada e validada pelo usuário | #19 | 02cbbfe |
 | 11 | Autenticação com Google (Web e Android) | ✅ Implementada e validada pelo usuário na Web e Android | #20 | 44ad595 |
 
+### Issues concluídas depois das Tasks (todas validadas pelo usuário)
+
+| Issue | Tema | PRs |
+|-------|------|-----|
+| #22–#26 | Varredura de segurança (schema, RLS, enumeração de usuários, CSP, Android) | #34–#43 |
+| #41 | Pedido de filiação a grupos | #45 |
+| #42 | Perfil de usuário, foto e exclusão de conta | #48, #49, #50, #57 |
+| #52 | Promover/rebaixar membros + troca de conta na mesma aba | #53 |
+| #54 | Link de vídeo por música (`[VIDEO]` no TXT) | #58 (outra sessão) |
+| #55 | Data e hora no padrão brasileiro (`dd/MM/aaaa HH:mm`) | #59 (outra sessão) |
+
+### Issues abertas
+
+| Issue | Tema | Situação |
+|-------|------|----------|
+| #27 | Política de direitos autorais do catálogo compartilhado | Decisão do usuário, não é código |
+| #51 | E-mails de autenticação com a identidade do app | **Bloqueada:** não há servidor de e-mail (SMTP) nem domínio. Ver "Riscos conhecidos" |
+| #56 | Avaliar notificações para novas celebrações (push/e-mail/Telegram) | Spike criado pela outra sessão; priorizar opções gratuitas |
+
 ---
 
 ## Varredura técnica e de segurança (12–13/11/2026)
 
-Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 testes passando. A cobertura de testes é baixa (só parser, UUID e modelo de celebração; sync, RLS e auth não têm teste).
-
 | Issue | Tema | Estado |
 |-------|------|--------|
-| #22 | `schema.sql` desatualizado + `search_path` das funções `security definer` | ✅ Fechada (PR #35). Migration aplicada |
-| #23 | RLS: autor imutável, último coordenador, música do mesmo grupo, revogar `anon` | ✅ Fechada (PR #36). Migration aplicada |
-| #24 | `list_group_invitees` permite enumerar todos os usuários (risco médio) | ✅ Fechada (PR #43). Aba "Usuário cadastrado" removida; convite só por e-mail exato. RPC removida do banco após publicar Web + APK. Convite validado pelo usuário no Web |
-| #25 | Cabeçalhos de segurança Web (CSP etc.) | ✅ Fechada (PRs #37 e #38). Validada em produção pelo usuário |
-| #26 | Android: `allowBackup`, deep link/App Links, assinatura de release | ✅ Fechada (PR #40). Backup desativado; release sem `key.properties` falha. App Links avaliado e não adotado (login usa PKCE). Login validado pelo usuário |
-| #27 | Política de direitos autorais do catálogo compartilhado | Aberta, sem branch (decisão do usuário) |
+| #22 | `schema.sql` desatualizado + `search_path` das funções `security definer` | ✅ PR #35 |
+| #23 | RLS: autor imutável, último coordenador, música do mesmo grupo, revogar `anon` | ✅ PR #36 |
+| #24 | `list_group_invitees` permitia enumerar todos os usuários (risco médio) | ✅ PR #43. Convite só por e-mail exato |
+| #25 | Cabeçalhos de segurança Web (CSP etc.) | ✅ PRs #37 e #38 |
+| #26 | Android: `allowBackup`, deep link, assinatura de release | ✅ PR #40. App Links avaliado e não adotado (login usa PKCE) |
 
 (#28 a #33 foram duplicatas e estão fechadas.)
 
-### PRs e branches
-- Mergeados em `master`: **#34** (minimização de dados), **#35** (#22), **#36** (#23), **#37** e **#38** (#25), **#40** (#26), **#39** (HANDOFF), **#43** (#24).
-- Todos os riscos da varredura estão tratados. Resta a **#27** (decisão do usuário, não é código).
-- **Mudanças de banco que quebram builds antigos:** publique primeiro o Web e o APK novos, valide e só então aplique a migration (feito assim na restrição de e-mail e na #24). Use `Refs #<n>` no PR, em vez de `Closes`, quando a issue só fecha depois da migration.
+- **Mudanças de banco que quebram builds antigos:** publique primeiro o Web e o APK novos, valide e só então aplique a migration (feito na restrição de e-mail e na #24). Use `Refs #<n>` no PR, em vez de `Closes`, quando a issue só fecha depois da migration ou do teste do usuário.
+- **Mudanças aditivas** (#41, #42, #52): migration antes do app.
 
-### #41 — Pedido de filiação a grupos (✅ concluída em 13/11/2026)
-- Spec completo em `.kiro/specs/pedido-filiacao-grupos/` (requisitos, design, tarefas). PR #45, produção a partir de `b2c3bc3`.
-- **Banco** (migration `20261116_group_join_requests.sql`, aplicada): coluna `grupos.aceita_solicitacoes` (default `false`), tabela `solicitacoes_grupo` **sem acesso direto** (RLS sem policies + `revoke`), 9 RPCs `security definer`: `definir_aceita_solicitacoes`, `obter_aceita_solicitacoes`, `listar_solicitacoes_pendentes` (única fonte da foto), `contar_solicitacoes_pendentes`, `decidir_solicitacao` (row lock + insert atômico em `membros_grupo`), `listar_grupos_abertos`, `solicitar_entrada`, `listar_minhas_solicitacoes`, `cancelar_solicitacao`.
-- `add_group_member_by_email` agora também marca como `aprovada` o pedido pendente de quem é convidado.
-- Testes do banco: `supabase/tests/solicitacoes_grupo.sql` (49 verificações, roda em transação revertida). Rode de novo após mexer nessas funções.
-- **App:** tela `/explore` (Encontrar grupos), switch e lista de pendentes na tela de membros, badge em Meus Grupos. Online only; nada no Drift.
-- **Validado pelo usuário** (Web e Android, duas contas): solicitação com aprovação e com recusa. Cancelamento e "fechar grupo com pendente" foram cobertos só pelos testes SQL.
-- Estado em 13/11/2026: os 4 grupos estão com `aceita_solicitacoes = true` (ligado durante o teste); 1 pedido aprovado e 1 recusado.
-- Wish list (no `requirements.md` do spec): limite de pedidos por usuário entre grupos; convite para e-mail não cadastrado.
+---
 
-### Próximas features
-- **#42 — Perfil de usuário e uso da foto.** Escopo aberto: definir quem pode ver a foto (membros do mesmo grupo? solicitantes?) e se haverá upload (Supabase Storage) além do `avatar_url` do Google. Encaixa junto ou logo depois da #41.
+## Features recentes
 
-### Deploy Web (importante)
+### #41 — Pedido de filiação a grupos
+- Spec: `.kiro/specs/pedido-filiacao-grupos/`.
+- **Banco** (`20261116_group_join_requests.sql`): coluna `grupos.aceita_solicitacoes` (default `false`, opt-in), tabela `solicitacoes_grupo` **sem acesso direto** (RLS sem policies + `revoke`), 9 RPCs `security definer` (`definir_aceita_solicitacoes`, `obter_aceita_solicitacoes`, `listar_solicitacoes_pendentes`, `contar_solicitacoes_pendentes`, `decidir_solicitacao`, `listar_grupos_abertos`, `solicitar_entrada`, `listar_minhas_solicitacoes`, `cancelar_solicitacao`).
+- `add_group_member_by_email` também aprova o pedido pendente de quem é convidado.
+- Testes: `supabase/tests/solicitacoes_grupo.sql` (49 verificações).
+- **App:** tela `/explore` (Encontrar grupos), switch "Aceitar solicitações" e lista de pendentes na tela de membros, badge em Meus Grupos. Online only.
+- Estado em 14/11/2026: 4 dos 5 grupos com `aceita_solicitacoes = true` (decisão do usuário: ficam abertos).
+
+### #42 — Perfil de usuário, foto e exclusão de conta
+- Spec: `.kiro/specs/perfil-usuario/`.
+- **Foto:** `users.foto` guarda `null`, a URL do Google (`https://...`) ou o caminho de uma foto enviada (`avatars/<user_id>/<uuid>.jpg`).
+  - Bucket **privado** `avatars` (512 KB; JPEG/PNG/WebP); exibição por link temporário de 1 h, pedido em lote (`lib/features/profile/data/foto_resolver.dart`).
+  - Quem vê (`pode_ver_foto`): o próprio usuário, colegas de grupo e coordenadores de grupo com pedido pendente dele.
+  - `_foto_valida` aceita só `null`, a própria pasta ou a foto do Google da própria conta (metadados do login **ou** identidade Google vinculada). Bloqueia URL externa (rastreio de IP). Usada também por `update_my_profile`.
+  - `grant select (foto)` em `users`; `email` continua bloqueado.
+- **Excluir conta** (`excluir_minha_conta`): bloqueada se o usuário for o único coordenador de algum grupo (`grupos_impedindo_exclusao`). A autoria de grupos, músicas e celebrações passa para o coordenador mais antigo do grupo; a trigger `set_criado_por` respeita a flag `app.reatribuir_autor` só nessa função. O app apaga a foto do Storage antes.
+- **Primeiro acesso** só confirma o nome; a escolha "Coordenador/Membro" foi removida (`users.papel` fica no banco sem uso).
+- **App:** "Meu perfil" (`/profile`), aberto pelo avatar em Meus Grupos (o botão Sair foi para lá). `image_picker: 1.2.1` fixado (última versão compatível com Dart 3.7). No Web a opção se chama "Escolher arquivo".
+- Testes: `supabase/tests/perfil_usuario.sql` (47 verificações, com contas descartáveis criadas dentro da transação).
+
+### #52 — Promover/rebaixar membros e troca de conta
+- RPC `alterar_papel_membro` (só coordenadores; `protect_last_coordinator` mantém pelo menos um). Não há policy de UPDATE em `membros_grupo`: a RPC é o único caminho. Testes: `supabase/tests/papel_membro.sql` (11).
+- Tela de membros: menu ⋮ por membro (tornar coordenador/membro, remover). O próprio coordenador pode "Deixar de ser coordenador" se houver outro.
+- **Defeito corrigido:** `currentUserIdProvider` guardava o id da primeira conta da aba; agora acompanha a sessão. Lista de membros (`autoDispose`) e perfil recarregam ao abrir a tela e na troca de conta.
+
+### #54 e #55 (outra sessão)
+- **#54:** link de vídeo opcional por música, pela linha `[VIDEO]: https://...` no TXT (documentado em `docs/formato-musicas.md`). Fica dentro de `conteudo_json`; sem migration. Abre fora do app (`url_launcher`, só http/https, validado de novo antes de abrir). Aparece no hinário e no montador, não no modo performance.
+- **#55:** utilitário `lib/core/utils/date_format_br.dart` (`intl`): `dd/MM/aaaa` e `HH:mm`, seletor de hora em 24h. Usa o fuso **do aparelho** (a issue pedia `America/Sao_Paulo`; mesmo resultado para quem está no Brasil).
+
+---
+
+## Deploy Web (importante)
 - O deploy é `vercel deploy .\build\web --prod`, então a raiz do deploy é `build/web`.
-- A configuração da Vercel fica em **`web/vercel.json`** (o `flutter build web` copia para `build/web`). Um `vercel.json` na raiz do repositório **não** é lido; foi por isso que a CSP e os rewrites não chegavam à produção até o PR #38.
-- O vínculo do projeto fica em `build/web/.vercel/project.json` (projeto `vozes-da-catedral`). O `flutter build web` não apaga esse arquivo, mas confira antes de publicar.
-- Depois de publicar, confira os cabeçalhos da resposta (CSP, `X-Frame-Options`, etc.). O app usa URLs com `#` (estratégia padrão), então rotas profundas não dependem do rewrite.
-- A CSP libera `self`, `*.supabase.co` (https/wss), `www.gstatic.com` e `fonts.gstatic.com`, `wasm-unsafe-eval` e workers `blob:`. Se um recurso novo for bloqueado, o Console mostra "Refused to…".
+- A configuração da Vercel fica em **`web/vercel.json`** (o `flutter build web` copia para `build/web`). Um `vercel.json` na raiz do repositório **não** é lido.
+- O vínculo do projeto fica em `build/web/.vercel/project.json` (projeto `vozes-da-catedral`, fora do git). Se precisar publicar de outra pasta (ex.: cópia limpa da `master`), copie esse arquivo para o `build/web` dela.
+- **CSP:** libera `self`, `*.supabase.co` (https/wss), `www.gstatic.com`, `fonts.gstatic.com`, `*.googleusercontent.com` (em `connect-src`), `wasm-unsafe-eval` e workers `blob:`. No Flutter Web (CanvasKit) **imagens são baixadas com `fetch`**, então valem as regras de `connect-src`, não só de `img-src`. Um recurso bloqueado aparece no Console como "Refused to…".
+- **Armadilha do cache de plugins:** depois de adicionar um pacote com parte Web, o build pode reutilizar um `web_plugin_registrant.dart` antigo em `.dart_tool/flutter_build/<hash>/` e o plugin some do site (aconteceu com o `image_picker`: "Não foi possível abrir"). Solução: apagar essa pasta de cache e compilar de novo; conferir no `main.dart.js` se o plugin entrou.
+- Depois de publicar, confira os cabeçalhos (CSP, `X-Frame-Options`) e que o `main.dart.js` de produção contém o código novo.
 
-### Android: assinatura e backup
-- Desde o PR #40, `flutter build apk --release` **falha** sem `android/key.properties` (não há mais fallback para a chave debug). Para testes sem a chave, use `--debug`.
-- O app não participa de backup do Android (`allowBackup="false"` + `res/xml/data_extraction_rules.xml`); após reinstalar ou trocar de aparelho, entrar de novo e sincronizar.
-- O APK release é assinado com `C:\Users\abpau\vozes-da-catedral-release.jks` (fora do repositório; configurado em `android/key.properties`, que está no `.gitignore`). Faça backup desse keystore: sem ele, não há como atualizar o app instalado.
-- Em 13/11/2026 o Samsung estava com um APK assinado com a chave **debug**; foi preciso desinstalar uma vez para instalar o release. Daqui em diante, `adb install -r` funciona.
-- Outros usuários Android com APK de debug também precisam desinstalar uma vez (perdem o cache local; sincronizar antes).
+## Android: assinatura e backup
+- `flutter build apk --release` **falha** sem `android/key.properties` (sem fallback para a chave debug). Para testes sem a chave, use `--debug`.
+- O app não participa de backup do Android (`allowBackup="false"` + `res/xml/data_extraction_rules.xml`).
+- O APK release é assinado com `C:\Users\abpau\vozes-da-catedral-release.jks` (fora do repositório; `android/key.properties` está no `.gitignore`). **Faça backup desse keystore**: sem ele, não há como atualizar o app instalado.
+- Usuários com APK assinado com a chave debug precisam desinstalar uma vez (perdem o cache local; sincronizar antes). Depois, `adb install -r` funciona.
 
-### Estado do banco Supabase (validado via MCP em 13/11/2026)
-- As 18 funções `security definer` de `public` têm `search_path` vazio e `anon` sem `EXECUTE` (9 de antes + 9 da #41; `list_group_invitees` foi removida na #24).
-- O advisor mostra um aviso informativo `rls_enabled_no_policy` em `solicitacoes_grupo`: é intencional (acesso só via RPC).
-- Nenhuma RPC lista usuários cadastrados; membros entram por `add_group_member_by_email` (não revela se o e-mail existe).
-- Triggers ativos: `set_criado_por` (`musicas`, `celebracoes`) e `protect_last_coordinator` (`membros_grupo`).
-- `itens_celebracao` só aceita `musica_id` de música do mesmo grupo da celebração.
-- Contagens no momento da validação: 4 grupos, 9 membros, 211 músicas, 3 celebrações, 36 itens, 6 usuários.
-- Testes feitos em transação revertida (nada gravado). **Não** houve teste pelo app com duas contas (coordenador e membro).
-- 3 dos 4 grupos têm um único coordenador; remover esse coordenador agora retorna erro. O app não trata essa mensagem de forma específica.
+## Estado do banco Supabase (14/11/2026)
+- 26 funções `security definer` em `public`, todas com `search_path` vazio; `anon` sem `EXECUTE` nas RPCs do app.
+- Advisors: avisos esperados de RPCs executáveis por `authenticated`, `rls_enabled_no_policy` em `solicitacoes_grupo` (intencional) e a proteção de senhas vazadas desligada (risco aceito: só no plano Pro).
+- `public.users`: o cliente lê só `id`, `nome`, `papel` e `foto`; `email` bloqueado. Perfil gravado pelas RPCs `atualizar_meu_nome`, `definir_minha_foto` e `update_my_profile` (versões antigas do app).
+- Triggers: `set_criado_por` (`musicas`, `celebracoes`), `protect_last_coordinator` (`membros_grupo`).
+- Contagens: 6 usuários, 5 grupos, 12 participações, 211 músicas, 3 celebrações, 4 solicitações, 2 fotos enviadas.
+- **APKs anteriores a 0.1.1 não funcionam** (liam `email`). Todos os usuários Android precisam de 0.1.1 ou superior; para as features recentes, 0.2.0.
+- Testes do banco (rodam em transação revertida; rode de novo após mexer nessas funções): `supabase/tests/solicitacoes_grupo.sql`, `perfil_usuario.sql`, `papel_membro.sql`. Eles terminam sempre com um erro `RESULTADO: N ok, M falhas` — é o relatório, não uma falha.
 
-- **Restrição de e-mail aplicada em 13/11/2026** (migration `fix_public_users_select_grant`): `authenticated` só lê `id`, `nome` e `papel` de `public.users`; `email`, `foto`, `select *` e `update` direto retornam erro de permissão. Perfil é gravado pela RPC `update_my_profile`. Validado em transação revertida. Para reverter: `grant select on public.users to authenticated;`
-- **O APK 0.1.0 (anterior ao #34) não funciona mais** com essa restrição (lia `email` e fazia `upsert` em `users`). Todo usuário Android precisa do 0.1.1 ou superior.
-- Advisor de segurança: restam só avisos esperados de RPCs `security definer` executáveis por `authenticated` (necessário para o app e para as policies) e a proteção de senhas vazadas desligada.
-
-- **Proteção contra senhas vazadas (HaveIBeenPwned): risco aceito.** Disponível só no plano Pro; a organização está no Free. O aviso `auth_leaked_password_protection` do advisor continua aparecendo e é esperado. Alternativa disponível no Free (não aplicada): tamanho mínimo e caracteres obrigatórios em Sign In / Providers → Email; senhas antigas fora da regra passam a receber `WeakPasswordError` no login.
-
-### Pendências importantes
-1. Aplicar/validar o `schema.sql` em um banco vazio (não testado).
-2. As migrations do repositório não correspondem 1:1 ao histórico do Supabase (`list_migrations` mostra só as aplicadas via MCP; parte foi aplicada pelo SQL Editor). O `schema.sql` é a referência do estado final.
-3. Testar com duas contas: sincronizar celebração, convidar membro e tentar remover o único coordenador.
-4. Distribuir o APK 0.1.1 aos demais usuários Android (`build\app\outputs\flutter-apk\app-release.apk`).
+## Riscos conhecidos e pendências
+1. **E-mail de confirmação (#51):** o SMTP padrão do Supabase só envia para endereços pré-autorizados (time do projeto) e tem limite baixo por hora. Pessoas de fora que se cadastrarem por **e-mail e senha** podem não receber a confirmação nem a recuperação de senha. Login com Google não é afetado. Resolver antes de abrir o app a mais usuários.
+2. Aplicar/validar o `schema.sql` em um banco vazio (não testado).
+3. As migrations do repositório não correspondem 1:1 ao histórico do Supabase (parte foi aplicada pelo SQL Editor). O `schema.sql` é a referência do estado final.
+4. Distribuir o APK 0.2.x aos demais usuários Android (subir a versão antes).
+5. Cobertura de testes do app ainda baixa em sync e telas (34 testes, focados em modelos, parser e datas).
 
 ---
 
@@ -127,7 +159,7 @@ Resultado da varredura: `flutter analyze` sem problemas e `flutter test` com 6 t
 
 ## Build Android
 
-O APK debug foi compilado e instalado no Samsung (`RQCW701905N`). Em 08/11/2026, `flutter run -d RQCW701905N --no-pub --no-resident` iniciou o app com sucesso; a migração Drift local v1→v2 também foi exercitada ao abrir o banco existente.
+Hoje o Samsung (`RQCW701905N`) usa o **APK release** (ver "Android: assinatura e backup"). O roteiro abaixo é para desenvolvimento com o app em modo debug; instalar um build debug por cima do release exige desinstalar (assinaturas diferentes).
 
 ### Para repetir:
 
@@ -148,10 +180,10 @@ Para validar somente a compilação, use `flutter build apk --debug --no-pub`.
 
 ## Supabase — Schema já aplicado ✅
 
-O arquivo `supabase/schema.sql` foi executado no SQL Editor do Supabase dashboard.
-Tabelas criadas: `users`, `grupos`, `membros_grupo`, `musicas`, `celebracoes`, `itens_celebracao`
-Trigger: auto-criação de perfil no `auth.users` ao fazer signup
-RLS: Coordenador tem escrita no grupo, Membro somente leitura
+O schema inicial foi aplicado pelo SQL Editor; as mudanças posteriores estão em `supabase/migrations/` (aplicadas pelo MCP ou pelo SQL Editor). `supabase/schema.sql` acumula o estado final, mas nunca foi testado num banco vazio.
+Tabelas: `users`, `grupos`, `membros_grupo`, `musicas`, `celebracoes`, `itens_celebracao`, `solicitacoes_grupo`; bucket `avatars`.
+Trigger: auto-criação de perfil no `auth.users` ao fazer signup.
+Detalhes de acesso em "Modelo de Dados Supabase" e "Estado do banco Supabase".
 
 ---
 
@@ -160,43 +192,45 @@ RLS: Coordenador tem escrita no grupo, Membro somente leitura
 ```
 lib/
 ├── main.dart                             inicializa Supabase + ProviderScope
-├── app.dart                              MaterialApp.router + temas
+├── app.dart                              MaterialApp.router + temas + localização pt_BR
 ├── core/
-│   ├── config/supabase_config.dart       URL + anon key via dart-define
-│   ├── database/
-│   │   ├── tables.dart                   6 tabelas Drift
-│   │   ├── app_database.dart             queries + DAOs, schema v3
-│   │   ├── app_database.g.dart           gerado (build_runner)
-│   │   └── database_provider.dart        Provider<AppDatabase>
+│   ├── config/supabase_config.dart       URL + chave publicável via dart-define
+│   ├── database/                         Drift: 6 tabelas, schema v4, DAOs, provider
+│   ├── domain/momento_liturgico.dart     12 momentos do Rito Romano
 │   ├── router/app_router.dart            GoRouter + redirect auth + nav helpers
-│   └── theme/app_theme.dart              tema claro/escuro (dark otimizado altar)
+│   ├── theme/app_theme.dart              tema claro/escuro (dark otimizado altar)
+│   └── utils/date_format_br.dart         datas dd/MM/aaaa e horas HH:mm (#55)
 └── features/
     ├── auth/
     │   ├── domain/user_model.dart
     │   └── presentation/
-    │       ├── auth_provider.dart         AuthService, supabaseProvider, authSessionProvider
-    │       ├── login_screen.dart          login + signup email/senha
-    │       └── onboarding_screen.dart     seleção papel (Coordenador/Membro) 1º acesso
+    │       ├── auth_provider.dart         AuthService, sessão, currentUserIdProvider (segue a sessão, #52)
+    │       ├── login_screen.dart          login e-mail/senha + Google
+    │       └── onboarding_screen.dart     1º acesso: confirma o nome (#42)
     ├── groups/
-    │   ├── domain/group_model.dart        GrupoModel, PapelGrupo enum
-    │   ├── data/groups_provider.dart      GruposService (createGrupo, syncGrupos, addMembro, removeMembro)
+    │   ├── domain/                        GrupoModel, PapelGrupo, MembroGrupoModel, modelos de solicitação (#41)
+    │   ├── data/
+    │   │   ├── groups_provider.dart       GruposService (criar, sync, convidar, alterar papel, remover)
+    │   │   └── solicitacoes_provider.dart SolicitacoesService (#41)
     │   └── presentation/
-    │       ├── groups_screen.dart         lista grupos + FAB criar grupo
-    │       ├── group_detail_screen.dart   tabs: Hinário | acesso às celebrações
-    │       └── group_members_screen.dart  lista, convite e remoção de membros
+    │       ├── groups_screen.dart         Meus Grupos: avatar do perfil, Encontrar grupos, badge de pendentes
+    │       ├── explore_groups_screen.dart Encontrar grupos e minhas solicitações (#41)
+    │       ├── group_detail_screen.dart   tabs: Hinário | celebrações
+    │       ├── group_members_screen.dart  membros com foto, convite, menu de papel/remoção (#52)
+    │       └── join_requests_widgets.dart switch "Aceitar solicitações" e pendentes (#41)
+    ├── profile/                           (#42)
+    │   ├── domain/meu_perfil_model.dart   tipos de foto, validação do nome
+    │   ├── data/
+    │   │   ├── profile_service.dart       nome, foto (envio/Google/remover), excluir conta
+    │   │   └── foto_resolver.dart         links temporários das fotos, em lote
+    │   └── presentation/
+    │       ├── profile_screen.dart        Meu perfil
+    │       └── user_avatar.dart           avatar com foto ou inicial
     ├── songs/
-    │   ├── domain/
-    │   │   ├── song_model.dart            SongModel, SongContent, SongSection, SongLine
-    │   │   └── song_parser.dart           parser .txt → JSON (seções, cifra+letra)
-    │   ├── data/songs_provider.dart       SongsService (importFromFile, publishMusicas, syncMusicas)
-    │   └── presentation/
-    │       ├── cifra_view.dart            ⭐ CifraView com RobotoMono, toggle cifras, font size
-    │       ├── songs_screen.dart          hinário com import .txt, delete, sync
-    │       └── song_detail_screen.dart    visualizador CifraView + controles fonte/toggle
-    ├── celebrations/
-    │   ├── data/celebrations_provider.dart CRUD local e sincronização Supabase
-    │   ├── domain/celebration_model.dart  CelebracaoModel, MomentoLiturgico (12 momentos)
-    │   └── presentation/celebrations_screen.dart lista, edição e montador
+    │   ├── domain/                        SongModel, SongContent (videoUrl #54), parser .txt, SongId
+    │   ├── data/songs_provider.dart       importação, publicação, sync, catálogo
+    │   └── presentation/                  hinário, CifraView, detalhe, botão de vídeo (#54)
+    ├── celebrations/                      montador (Rito Romano), sync, modo performance
     └── splash/presentation/splash_screen.dart
 ```
 
@@ -204,8 +238,10 @@ lib/
 ```
 /                   → SplashScreen (redireciona para /login ou /groups)
 /login              → LoginScreen
-/onboarding         → OnboardingScreen (seleção de papel no 1º login)
-/groups             → GroupsScreen
+/onboarding         → OnboardingScreen (confirma o nome no 1º acesso)
+/groups             → GroupsScreen (Meus Grupos)
+/explore            → ExploreGroupsScreen (Encontrar grupos, #41)
+/profile            → ProfileScreen (Meu perfil, #42)
 /groups/:grupoId    → GroupDetailScreen
 /groups/:grupoId/members → GroupMembersScreen
 /groups/:grupoId/songs/:musicaId → SongDetailScreen
@@ -218,26 +254,32 @@ lib/
 1. Splash verifica sessão Supabase
 2. Se logado: busca perfil em `users` → se não existe → `/onboarding` → se existe → `/groups`
 3. Se não logado → `/login`
-4. Qualquer mudança na sessão atualiza o router via `_AuthNotifier`
+4. Qualquer mudança na sessão atualiza o router via `_AuthNotifier` e o `currentUserIdProvider`
 
 ---
 
 ## Modelo de Dados Supabase
 
 ```
-users              id (uuid, FK auth.users), nome, email, foto, papel
-grupos             id, nome, descricao, criado_por (FK users)
-membros_grupo      grupo_id + user_id (PK composta), papel (coordenador|membro)
-musicas            id, grupo_id, titulo, tom_original, bpm, categorias[], conteudo_raw, conteudo_json
-celebracoes        id, grupo_id, titulo, data_hora, criado_por
-itens_celebracao   id, celebracao_id, musica_id, ordem, momento_liturgico, observacao
+users                id (uuid, FK auth.users), nome, email (não legível pelo cliente), foto, papel (sem uso)
+grupos               id, nome, descricao, criado_por (FK users), aceita_solicitacoes
+membros_grupo        grupo_id + user_id (PK composta), papel (coordenador|membro)
+musicas              id, grupo_id, titulo, tom_original, bpm, categorias[], momentos_liturgicos[],
+                     conteudo_raw, conteudo_json (inclui videoUrl), criado_por, copiada_de_id
+celebracoes          id, grupo_id, titulo, data_hora, criado_por
+itens_celebracao     id, celebracao_id, musica_id, ordem, momento_liturgico, observacao
+solicitacoes_grupo   id, grupo_id, user_id, status, mensagem, criada_em, decidida_em, decidida_por (#41)
+storage: avatars     bucket privado, avatars/<user_id>/<arquivo> (#42)
 ```
 
-**RLS resumido:**
-- `users`: leitura própria + perfis de pessoas do mesmo grupo; convites por RPC restrita a coordenadores
-- `grupos`: leitura para membros, escrita para coordenador/criador
-- `membros_grupo`: leitura para membros do grupo, escrita para coordenador
-- `musicas`, `celebracoes`, `itens_celebracao`: leitura para membros, escrita para coordenador
+**Acesso resumido:**
+- `users`: leitura própria + colegas de grupo (só `id`, `nome`, `papel`, `foto`); gravação só por RPC
+- `grupos`: leitura para membros, escrita para coordenador/criador; busca de abertos só por RPC
+- `membros_grupo`: leitura para membros do grupo; inserção e remoção por coordenador; papel só pela RPC `alterar_papel_membro`
+- `musicas`: catálogo legível por qualquer usuário autenticado; escrita para coordenador
+- `celebracoes`, `itens_celebracao`: leitura para membros, escrita para coordenador
+- `solicitacoes_grupo`: sem acesso direto; só RPCs
+- `avatars`: leitura conforme `pode_ver_foto`; escrita só na própria pasta
 
 ---
 
@@ -248,6 +290,7 @@ itens_celebracao   id, celebracao_id, musica_id, ordem, momento_liturgico, obser
 [TOM]: D
 [CATEGORIA]: santo
 [BPM]: 80
+[VIDEO]: https://www.youtube.com/watch?v=...
 
 [ESTROFE]
 D        F#m
@@ -262,11 +305,12 @@ G        A  D
 Hosana nas alturas!
 ```
 
-Seções suportadas: ESTROFE, REFRAO/REFRÃO, PONTE, PRE-REFRAO, INTRO, OUTRO, CODA, VERSO
+Seções suportadas: ESTROFE, REFRAO/REFRÃO, PONTE, PRE-REFRAO, INTRO, OUTRO, CODA, VERSO. `[VIDEO]` é opcional (só `http`/`https`). Guia completo: `docs/formato-musicas.md`.
 
 ---
 
-## Próximas Tasks em Detalhe
+## Histórico das Tasks 5–11 (registro da implementação original)
+
 
 ### Task 5 — Grupos, papéis e controle de acesso (issue #14)
 O `GruposService` já existe em `lib/features/groups/data/groups_provider.dart` com:
@@ -403,7 +447,17 @@ flutter clean
 # Ver dispositivos disponíveis
 flutter devices
 adb devices
+
+# Publicar o Web (a partir de build/web; ver "Deploy Web")
+flutter build web --release
+vercel deploy .\build\web --prod
+
+# Instalar o release por cima, sem perder dados
+flutter build apk --release
+adb -s RQCW701905N install -r build\app\outputs\flutter-apk\app-release.apk
 ```
+
+Testes do banco: cole o conteúdo de `supabase/tests/*.sql` no SQL Editor (ou execute pelo MCP). Cada script termina com o erro `RESULTADO: N ok, M falhas`, que é o relatório; nada fica gravado.
 
 ---
 
@@ -415,7 +469,7 @@ adb devices
 4. Se o build funcionar, o app deve mostrar tela de splash → login
 5. Crie uma conta de teste no app → será redirecionado para onboarding
 6. **Lembre o usuário:** antes de testar grupos/músicas, precisa criar um grupo pelo app
-7. Todas as Tasks 1–11 estão concluídas, assim como a varredura de segurança (#22 a #26), a restrição de e-mail e a **#41** (pedido de filiação). Próximos passos: **#42** (perfil/foto; vale fazer um spec como na #41); a **#27** aguarda decisão do usuário. Uma branch por issue.
+7. Estão concluídas e validadas: Tasks 1–11, varredura de segurança (#22–#26), #41, #42, #52, #54 e #55. Abertas: **#27** (decisão do usuário), **#51** (bloqueada sem servidor de e-mail) e **#56** (spike de notificações). Antes de distribuir o APK a outras pessoas, subir a versão. Uma branch por issue; validar antes do merge.
 
 > Para atualizar o GitHub Projects ao concluir cada task:
 > `gh issue close <NUMBER> --repo abpaula77/Vozes_da_Catedral --comment "Task concluída: <descrição>"`

@@ -62,8 +62,8 @@ A migration é aditiva e pode ser aplicada antes do app. Cada tarefa indica os r
 
 - [x] 4.2 Commit e PR (`Refs #42`)
 
-- [ ] 4.3 Merge, deploy Web, APK `0.2.0+3` no Samsung
+- [x] 4.3 Merge, deploy Web, APK `0.2.0+3` no Samsung
 
-- [ ] 4.4 Teste manual (usuário): enviar foto (galeria; câmera no Android), ver no colega, trocar, Google, remover, nome, novo cadastro, excluir conta de teste
+- [x] 4.4 Teste manual (usuário): enviar foto (galeria; câmera no Android), ver no colega, trocar, Google, remover, nome, novo cadastro, excluir conta de teste
 
-- [ ] 4.5 Fechar a #42 e atualizar o HANDOFF
+- [x] 4.5 Fechar a #42 e atualizar o HANDOFF
