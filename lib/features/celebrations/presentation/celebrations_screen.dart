@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/date_format_br.dart';
 import '../../groups/data/groups_provider.dart';
 import '../../groups/domain/group_model.dart';
 import '../../songs/data/songs_provider.dart';
@@ -95,7 +96,6 @@ class _CelebrationsScreenState extends ConsumerState<CelebrationsScreen> {
     final celebrationsAsync = ref.watch(
       celebracoesByGrupoProvider(widget.grupoId),
     );
-    final localizations = MaterialLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -140,10 +140,7 @@ class _CelebrationsScreenState extends ConsumerState<CelebrationsScreen> {
               return ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.event)),
                 title: Text(celebration.titulo),
-                subtitle: Text(
-                  '${localizations.formatMediumDate(celebration.dataHora)} · '
-                  '${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(celebration.dataHora))}',
-                ),
+                subtitle: Text(formatarDataHora(celebration.dataHora)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap:
                     () => context.push(
@@ -507,7 +504,6 @@ class _CelebrationDetailScreenState
       itensByCelebracaoProvider(widget.celebracaoId),
     );
     final songsAsync = ref.watch(musicasByGrupoProvider(widget.grupoId));
-    final localizations = MaterialLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -599,10 +595,7 @@ class _CelebrationDetailScreenState
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.calendar_month),
-                  title: Text(
-                    '${localizations.formatMediumDate(celebration.dataHora)} · '
-                    '${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(celebration.dataHora))}',
-                  ),
+                  title: Text(formatarDataHora(celebration.dataHora)),
                   subtitle: Text(
                     !celebration.isSynced || items.any((item) => !item.isSynced)
                         ? 'Rito Romano · Pendente de sincronização'
@@ -973,6 +966,11 @@ class _NewCelebrationDialogState extends State<_NewCelebrationDialog> {
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_dateTime),
+      builder:
+          (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!,
+          ),
     );
     if (time != null) {
       setState(() {
@@ -989,7 +987,6 @@ class _NewCelebrationDialogState extends State<_NewCelebrationDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = MaterialLocalizations.of(context);
     return AlertDialog(
       title: Text(widget.dialogTitle),
       content: SingleChildScrollView(
@@ -1011,18 +1008,14 @@ class _NewCelebrationDialogState extends State<_NewCelebrationDialog> {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.calendar_month),
               title: const Text('Data'),
-              subtitle: Text(localizations.formatMediumDate(_dateTime)),
+              subtitle: Text(formatarData(_dateTime)),
               onTap: _selectDate,
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.schedule),
               title: const Text('Horário'),
-              subtitle: Text(
-                localizations.formatTimeOfDay(
-                  TimeOfDay.fromDateTime(_dateTime),
-                ),
-              ),
+              subtitle: Text(formatarHora(_dateTime)),
               onTap: _selectTime,
             ),
           ],

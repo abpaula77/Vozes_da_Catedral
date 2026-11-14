@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/domain/momento_liturgico.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/date_format_br.dart';
 import '../data/songs_provider.dart';
 import '../domain/song_model.dart';
 import '../domain/song_parser.dart';
@@ -843,14 +844,7 @@ class _SyncStatus extends StatelessWidget {
         if (date == null) {
           return const Text('Ainda não sincronizado com o grupo.');
         }
-        final localDate = date.toLocal();
-        final formatted =
-            '${localDate.day.toString().padLeft(2, '0')}/'
-            '${localDate.month.toString().padLeft(2, '0')}/'
-            '${localDate.year} '
-            '${localDate.hour.toString().padLeft(2, '0')}:'
-            '${localDate.minute.toString().padLeft(2, '0')}';
-        return Text('Última sincronização: $formatted');
+        return Text('Última sincronização: ${formatarDataHora(date)}');
       },
     );
 
