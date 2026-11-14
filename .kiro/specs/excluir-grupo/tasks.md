@@ -44,7 +44,7 @@ A migration pode ser aplicada antes do app: nenhuma versão atual exclui grupos.
 ## 4. Verificação e publicação
 
 - [x] 4.1 `dart format`, `flutter analyze`, `flutter test`
-- [ ] 4.2 Commit e PR (`Refs #61`)
-- [ ] 4.3 Merge, deploy Web, APK no Samsung
-- [ ] 4.4 Teste manual (usuário): copiar, excluir, aviso em outra conta, troca de conta no mesmo aparelho
-- [ ] 4.5 Fechar a #61 e atualizar o HANDOFF
+- [x] 4.2 Commit e PR (`Refs #61`)
+- [x] 4.3 Merge, deploy Web, APK no Samsung
+- [x] 4.4 Teste manual (usuário): copiar, excluir, aviso em outra conta, troca de conta no mesmo aparelho
+- [x] 4.5 Fechar a #61 e atualizar o HANDOFF
